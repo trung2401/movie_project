@@ -1,0 +1,16 @@
+{
+  "name": "movie-project",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently --names \"FE,BE\" --prefix-colors \"blue,green\" \"npm run dev --prefix movie-app\" \"npm run start:dev --prefix movie-app-be\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "concurrently": "^9.2.4"
+  }
+}
