@@ -3,24 +3,21 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, Play } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useState } from 'react'
+import { useEffect } from 'react'
 import type { SyntheticEvent } from 'react'
-import { EMPTY_FILTERS } from '@/constants/movie'
+import { CONTAINER_CLASS } from '@/constants/layout'
 import { getMovieDescription } from '@/lib/movieText'
-import { buildMoviesEndpoint, getMovieDetail, getMovieList } from '@/services/movieApi'
+import { getMovieDetail } from '@/services/movieApi'
 import type { Movie } from '@/types/movie'
 import { cn } from '@/lib/cn'
+import { FavoriteButton } from '@/features/favorites/components/FavoriteButton'
 import { useHeroCarousel } from '../hooks/useHeroCarousel'
 
 type OptionalMovieMetadata = Movie & {
   category?: string | string[] | Array<{ name?: string }>
   genre?: string | string[] | Array<{ name?: string }>
   quality?: string
-}
-
-interface HeroMovieData {
-  movies: Movie[]
-  imageBaseUrl: string
 }
 
 function resolveImageUrl(path: string | undefined, baseUrl: string) {
@@ -79,19 +76,19 @@ function HeroSlideImage({ movie, imageBaseUrl, priority }: HeroSlideImageProps) 
           fill
           sizes="100vw"
           aria-hidden="true"
-          className="scale-110 object-cover opacity-35 blur-2xl"
+          className="hero-image-feather scale-110 object-cover opacity-35 blur-2xl"
           unoptimized={imageSrc.startsWith('data:')}
         />
       )}
       <Image
         src={imageSrc}
-        alt=""
+        alt={`${movie.name} - xem phim online`}
         fill
         priority={priority}
         sizes="100vw"
         onLoad={handleImageLoad}
         className={cn(
-          'transition-[object-position] duration-500',
+          'hero-image-feather transition-[object-position] duration-500',
           isPortrait
             ? 'object-contain object-top md:object-center'
             : 'object-cover object-top md:object-center',
@@ -106,10 +103,10 @@ function HeroBannerSkeleton() {
   return (
     <section
       aria-label="Đang tải phim nổi bật"
-      className="relative min-h-[430px] overflow-hidden border-y border-[var(--color-line)] bg-[var(--color-panel)] sm:min-h-[500px]"
+      className="relative min-h-[430px] overflow-hidden border-t border-[var(--color-line)] bg-[var(--color-panel)] sm:min-h-[500px]"
     >
       <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-[var(--color-panel)] via-[var(--color-panel-soft)] to-[var(--color-panel)]" />
-      <div className="relative z-10 mx-auto flex min-h-[430px] max-w-[100rem] items-end px-5 pb-20 sm:min-h-[500px] sm:px-8 lg:px-12">
+      <div className={cn(CONTAINER_CLASS, 'relative z-10 flex min-h-[430px] items-end pb-20 sm:min-h-[500px] lg:min-h-[680px]')}>
         <div className="w-full max-w-xl space-y-4">
           <div className="h-4 w-40 rounded bg-white/10" />
           <div className="h-12 w-4/5 rounded bg-white/10 sm:h-16" />
@@ -124,79 +121,61 @@ function HeroBannerSkeleton() {
   )
 }
 
-export function HeroBanner() {
-  const [heroData, setHeroData] = useState<HeroMovieData>({ movies: [], imageBaseUrl: '' })
-  const [loading, setLoading] = useState(true)
+export function HeroBanner({ movies, imageBaseUrl, loading }: { movies: Movie[]; imageBaseUrl: string; loading: boolean }) {
   const [paused, setPaused] = useState(false)
-  const { movies, imageBaseUrl } = heroData
+  const [hydratedHeroMovies, setHydratedHeroMovies] = useState<Movie[]>([])
   const { currentIndex, goTo } = useHeroCarousel({
-    itemCount: movies.length,
+    itemCount: Math.min(movies.length, 5),
     paused,
   })
+  const heroMovies = movies.slice(0, 5).map((movie) =>
+    hydratedHeroMovies.find((hydratedMovie) => hydratedMovie.slug === movie.slug) ?? movie,
+  )
 
   useEffect(() => {
+    const candidates = movies.slice(0, 5)
     let active = true
 
-    async function loadHeroMovies() {
-      try {
-        const result = await getMovieList(buildMoviesEndpoint(EMPTY_FILTERS, '', 1))
-        if (!active) return
+    const missingDescriptions = candidates.filter((movie) => !movie.content?.trim())
+    if (!missingDescriptions.length) return () => { active = false }
 
-        setHeroData({
-          movies: result.items.slice(0, 5),
-          imageBaseUrl: result.baseUrl,
-        })
-
-        const moviesWithDetails = await Promise.all(
-          result.items.slice(0, 5).map(async (movie) => {
-            if (movie.content?.trim()) return movie
-
-            try {
-              const detail = await getMovieDetail(movie.slug)
-              return detail?.content ? { ...movie, content: detail.content } : movie
-            } catch {
-              return movie
-            }
-          }),
-        )
-
-        if (active) {
-          setHeroData((currentData) => ({
-            ...currentData,
-            movies: moviesWithDetails,
-          }))
+    void Promise.all(
+      missingDescriptions.map(async (movie) => {
+        try {
+          const detail = await getMovieDetail(movie.slug)
+          return detail?.content?.trim() ? { ...movie, content: detail.content } : movie
+        } catch {
+          return movie
         }
-      } catch {
-        if (active) setHeroData({ movies: [], imageBaseUrl: '' })
-      } finally {
-        if (active) setLoading(false)
-      }
-    }
+      }),
+    ).then((hydratedMovies) => {
+      if (!active) return
+      const hydratedBySlug = new Map(hydratedMovies.map((movie) => [movie.slug, movie]))
+      setHydratedHeroMovies(candidates.map((movie) => hydratedBySlug.get(movie.slug) ?? movie))
+    })
 
-    void loadHeroMovies()
     return () => {
       active = false
     }
-  }, [])
+  }, [movies])
 
-  const activeMovie = movies[currentIndex]
-  const activeTitle = useMemo(
-    () => (activeMovie ? splitMovieTitle(activeMovie.name) : { eyebrow: '', title: '' }),
-    [activeMovie],
-  )
+  const activeMovie = heroMovies[currentIndex]
+  const activeTitle = activeMovie ? splitMovieTitle(activeMovie.name) : { eyebrow: '', title: '' }
 
   if (loading) return <HeroBannerSkeleton />
-  if (!movies.length || !activeMovie) return null
+  if (!heroMovies.length || !activeMovie) return null
 
   return (
     <>
       <section
         aria-label="Phim nổi bật"
-        className="relative isolate min-h-[430px] overflow-hidden border-y border-[var(--color-line)] bg-black sm:min-h-[500px] lg:min-h-[560px]"
+        className="relative isolate min-h-[430px] overflow-hidden border-t border-[var(--color-line)] bg-[var(--color-ink)] sm:min-h-[500px] lg:min-h-[680px]"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
       >
-        {movies.map((movie, index) => {
+        <div aria-hidden="true" className="absolute inset-0 bg-[var(--color-ink)]" />
+
+        {heroMovies.map((movie, index) => {
           const isActive = index === currentIndex
 
           return (
@@ -216,22 +195,22 @@ export function HeroBanner() {
         <div className="absolute inset-0 z-20 bg-gradient-to-r from-[var(--color-ink)] via-[var(--color-ink)]/75 to-[var(--color-ink)]/20" />
         <div className="absolute inset-0 z-20 bg-gradient-to-t from-[var(--color-ink)]/95 via-[var(--color-ink)]/35 to-transparent" />
 
-        <div className="relative z-30 mx-auto flex min-h-[430px] max-w-[100rem] items-end px-5 pb-20 pt-24 sm:min-h-[500px] sm:px-8 sm:pb-24 lg:min-h-[560px] lg:px-12 lg:pb-28">
-          <div className="w-full max-w-2xl text-center">
+        <div className={cn(CONTAINER_CLASS, 'relative z-30 flex min-h-[430px] items-end pb-20 pt-24 sm:min-h-[500px] sm:pb-24 lg:min-h-[680px] lg:pb-28')}>
+          <div className="w-full max-w-2xl text-center lg:text-left">
             {activeTitle.eyebrow && (
               <p className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--color-primary-soft)] sm:text-base">
                 {activeTitle.eyebrow}:
               </p>
             )}
-            <h1 className="mt-2 max-w-3xl text-4xl font-black uppercase leading-[0.98] text-white sm:text-6xl lg:text-7xl">
+            <h2 className="mt-2 max-w-3xl text-4xl font-black uppercase leading-[0.98] text-white sm:text-6xl lg:text-7xl">
               {activeTitle.title}
-            </h1>
+            </h2>
             <p className="mt-5 line-clamp-2 max-w-xl text-sm leading-6 text-white/75 sm:text-base">
               {getMovieDescription(activeMovie.content)}
             </p>
 
             {getMovieGenres(activeMovie).length > 0 && (
-              <p className="mt-4 flex flex-wrap justify-center gap-x-2 gap-y-1 text-xs font-semibold text-white/75 sm:text-sm">
+              <p className="mt-4 flex flex-wrap justify-center gap-x-2 gap-y-1 text-xs font-semibold text-white/75 sm:text-sm lg:justify-start">
                 {getMovieGenres(activeMovie).map((genre, index) => (
                   <span key={`${activeMovie.slug}-${genre}`}>
                     {index > 0 && <span className="mr-2 text-[var(--color-primary-soft)]">|</span>}
@@ -241,21 +220,22 @@ export function HeroBanner() {
               </p>
             )}
 
-            <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <div className="mt-6 flex flex-wrap justify-center gap-3 lg:justify-start">
               <Link
                 href={`/xem-phim/${activeMovie.slug}`}
-                className="focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-white px-5 py-3 text-sm font-bold text-[var(--color-ink)] shadow-xl shadow-black/25 transition hover:-translate-y-0.5 hover:bg-[var(--color-primary-soft)]"
+                className="focus-ring inline-flex min-h-11 min-w-40 items-center justify-center gap-2 rounded-lg bg-white px-5 py-3 text-sm font-bold text-[var(--color-ink)] shadow-xl shadow-black/25 transition hover:-translate-y-0.5 hover:bg-[var(--color-primary-soft)]"
               >
                 <Play className="size-4 fill-current" />
                 Xem phim ngay
                 <ArrowRight className="size-4" />
               </Link>
+              <FavoriteButton movieSlug={activeMovie.slug} movieName={activeMovie.name} />
             </div>
           </div>
         </div>
 
         <div className="absolute bottom-5 left-1/2 z-40 flex -translate-x-1/2 items-center gap-1.5 sm:bottom-7">
-          {movies.map((movie, index) => (
+          {heroMovies.map((movie, index) => (
             <button
               key={movie.slug}
               type="button"
@@ -276,7 +256,6 @@ export function HeroBanner() {
           ))}
         </div>
       </section>
-
     </>
   )
 }

@@ -14,6 +14,7 @@ import { User } from '../../users/entities/user.entity'
 @Entity('favorites')
 @Unique(['user', 'movieSlug'])
 @Index(['movieSlug'])
+@Index(['user', 'addedAt'])
 export class Favorite {
   @PrimaryGeneratedColumn('uuid')
   id: string

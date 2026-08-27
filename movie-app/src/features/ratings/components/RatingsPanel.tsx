@@ -39,7 +39,7 @@ export function RatingsPanel({ movieSlug }: { movieSlug: string }) {
         getRatings(movieSlug),
         getRatingAverage(movieSlug),
       ])
-      setRatings(nextRatings)
+      setRatings(nextRatings.items)
       setAverage(nextAverage)
     } catch (caughtError) {
       setError(

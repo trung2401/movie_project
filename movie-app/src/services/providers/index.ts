@@ -34,10 +34,17 @@ interface ProviderDetailResult {
   error?: unknown
 }
 
+export class MovieNotFoundError extends Error {
+  constructor(slug: string) {
+    super(`Không tìm thấy phim: ${slug}`)
+    this.name = 'MovieNotFoundError'
+  }
+}
+
 async function getProviderDetail(provider: MovieProvider, slug: string): Promise<ProviderDetailResult> {
   try {
     const movie = await provider.getMovieDetail(slug)
-    if (!movie) return { provider, movie: null, error: new Error('Không tìm thấy phim.') }
+    if (!movie) return { provider, movie: null, error: new MovieNotFoundError(slug) }
     if (!hasPlayableEpisode(movie)) return { provider, movie: null, error: new Error('Phim không có link_embed hợp lệ.') }
 
     return { provider, movie: addProviderName(movie, provider) }
@@ -77,6 +84,13 @@ async function getMovieDetailWithFallback(slug: string): Promise<Movie> {
   }
 
   if (!availableSources.length) {
+    const allProvidersNotFound = results.every(
+      (result) => result.error instanceof MovieNotFoundError,
+    )
+    if (allProvidersNotFound) {
+      throw results[0].error
+    }
+
     const lastError = results.at(-1)?.error
     throw new Error('Không thể tải phim có link phát hợp lệ từ tất cả provider.', { cause: lastError })
   }

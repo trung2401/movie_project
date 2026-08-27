@@ -4,13 +4,8 @@ import { Clock3, Heart, LogOut, RefreshCw, X } from 'lucide-react'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/features/auth/auth-context'
-import {
-  deleteFavorite,
-  Favorite,
-  getContinueWatching,
-  getFavorites,
-  WatchHistory,
-} from '@/services/userApi'
+import { useUserData } from '@/features/user-data/user-data-context'
+import type { Favorite, WatchHistory } from '@/services/userApi'
 
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat('vi-VN', {
@@ -23,24 +18,24 @@ export function AccountDrawer() {
   const {
     accountDrawerOpen,
     closeAccountDrawer,
-    runAuthenticated,
     session,
     signOut,
   } = useAuth()
+  const { deleteFavorite, loadFavorites, loadHistory } = useUserData()
   const [favorites, setFavorites] = useState<Favorite[]>([])
   const [history, setHistory] = useState<WatchHistory[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [removingSlug, setRemovingSlug] = useState('')
 
-  const loadLibrary = useCallback(async () => {
+  const loadLibrary = useCallback(async (force = false) => {
     if (!session) return
     setLoading(true)
     setError('')
     try {
       const [nextFavorites, nextHistory] = await Promise.all([
-        runAuthenticated(getFavorites),
-        runAuthenticated(getContinueWatching),
+        loadFavorites(force),
+        loadHistory(force),
       ])
       setFavorites(nextFavorites)
       setHistory(nextHistory)
@@ -53,7 +48,7 @@ export function AccountDrawer() {
     } finally {
       setLoading(false)
     }
-  }, [runAuthenticated, session])
+  }, [loadFavorites, loadHistory, session])
 
   useEffect(() => {
     if (!accountDrawerOpen) return
@@ -67,9 +62,7 @@ export function AccountDrawer() {
     setRemovingSlug(movieSlug)
     setError('')
     try {
-      await runAuthenticated((accessToken) =>
-        deleteFavorite(accessToken, movieSlug),
-      )
+      await deleteFavorite(movieSlug)
       setFavorites((items) => items.filter((item) => item.movieSlug !== movieSlug))
     } catch (caughtError) {
       setError(
@@ -106,7 +99,7 @@ export function AccountDrawer() {
           <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={() => void loadLibrary()}
+              onClick={() => void loadLibrary(true)}
               disabled={loading}
               className="focus-ring inline-flex size-9 items-center justify-center rounded-lg text-[var(--color-muted)] transition hover:bg-[var(--color-panel)] hover:text-white disabled:opacity-50"
               aria-label="Làm mới"

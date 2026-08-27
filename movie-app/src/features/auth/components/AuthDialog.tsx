@@ -2,13 +2,17 @@
 
 import { AlertCircle, Eye, EyeOff, LogIn, UserPlus, X } from 'lucide-react'
 import { FormEvent, useState } from 'react'
-import { useAuth } from '../auth-context'
-
-type AuthMode = 'login' | 'register'
+import { useAuth, type AuthMode } from '../auth-context'
 
 export function AuthDialog() {
-  const { authDialogOpen, closeAuthDialog, signIn, signUp } = useAuth()
-  const [mode, setMode] = useState<AuthMode>('login')
+  const {
+    authDialogMode,
+    authDialogOpen,
+    closeAuthDialog,
+    setAuthDialogMode,
+    signIn,
+    signUp,
+  } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -17,7 +21,7 @@ export function AuthDialog() {
 
   if (!authDialogOpen) return null
 
-  const isLogin = mode === 'login'
+  const isLogin = authDialogMode === 'login'
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -39,7 +43,7 @@ export function AuthDialog() {
   }
 
   function changeMode(nextMode: AuthMode) {
-    setMode(nextMode)
+    setAuthDialogMode(nextMode)
     setError('')
   }
 
@@ -48,7 +52,7 @@ export function AuthDialog() {
       <button
         type="button"
         className="absolute inset-0 cursor-default"
-        aria-label="Đóng đăng nhập"
+        aria-label="Đóng cửa sổ xác thực"
         onClick={closeAuthDialog}
       />
       <section
@@ -60,7 +64,7 @@ export function AuthDialog() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[.18em] text-[var(--color-primary-soft)]">
-              MovieApp
+              Motchill
             </p>
             <h2 id="auth-dialog-title" className="mt-1 text-xl font-black text-white">
               {isLogin ? 'Đăng nhập' : 'Tạo tài khoản'}
@@ -87,7 +91,7 @@ export function AuthDialog() {
               type="button"
               onClick={() => changeMode(value)}
               className={`focus-ring border-b-2 px-3 py-2 text-sm font-bold transition ${
-                mode === value
+                authDialogMode === value
                   ? 'border-[var(--color-primary)] text-white'
                   : 'border-transparent text-[var(--color-muted)] hover:text-white'
               }`}

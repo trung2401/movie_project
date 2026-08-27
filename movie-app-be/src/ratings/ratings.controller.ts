@@ -1,10 +1,24 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common'
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto'
 import { CreateRatingDto } from './dto/create-rating.dto'
-import { RatingAverageResponse, RatingResponse } from './ratings.types'
+import {
+  RatingAverageResponse,
+  RatingListResponse,
+  RatingResponse,
+  RatingSummaryResponse,
+} from './ratings.types'
 import { RatingsService } from './ratings.service'
 
 @Controller('ratings')
@@ -27,10 +41,18 @@ export class RatingsController {
     return this.ratingsService.getAverage(movieSlug)
   }
 
+  @Get(':movieSlug/summary')
+  getSummary(
+    @Param('movieSlug') movieSlug: string,
+  ): Promise<RatingSummaryResponse> {
+    return this.ratingsService.getAverage(movieSlug)
+  }
+
   @Get(':movieSlug')
   findByMovieSlug(
     @Param('movieSlug') movieSlug: string,
-  ): Promise<RatingResponse[]> {
-    return this.ratingsService.findByMovieSlug(movieSlug)
+    @Query() query: PaginationQueryDto,
+  ): Promise<RatingListResponse> {
+    return this.ratingsService.findByMovieSlug(movieSlug, query)
   }
 }

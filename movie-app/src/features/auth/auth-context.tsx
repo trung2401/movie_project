@@ -21,12 +21,16 @@ const SESSION_STORAGE_KEY = 'movie-app.user-session'
 
 interface UserSession extends AuthTokens {}
 
+export type AuthMode = 'login' | 'register'
+
 interface AuthContextValue {
   session: UserSession | null
   isReady: boolean
   authDialogOpen: boolean
+  authDialogMode: AuthMode
   accountDrawerOpen: boolean
-  openAuthDialog: () => void
+  openAuthDialog: (mode?: AuthMode) => void
+  setAuthDialogMode: (mode: AuthMode) => void
   closeAuthDialog: () => void
   openAccountDrawer: () => void
   closeAccountDrawer: () => void
@@ -60,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<UserSession | null>(null)
   const [isReady, setIsReady] = useState(false)
   const [authDialogOpen, setAuthDialogOpen] = useState(false)
+  const [authDialogMode, setAuthDialogMode] = useState<AuthMode>('login')
   const [accountDrawerOpen, setAccountDrawerOpen] = useState(false)
 
   useEffect(() => {
@@ -116,6 +121,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAccountDrawerOpen(false)
   }, [persistSession])
 
+  const openAuthDialog = useCallback((mode: AuthMode = 'login') => {
+    setAuthDialogMode(mode)
+    setAuthDialogOpen(true)
+  }, [])
+
+  const closeAuthDialog = useCallback(() => {
+    setAuthDialogOpen(false)
+  }, [])
+
   const runAuthenticated = useCallback(
     async <T,>(operation: (accessToken: string) => Promise<T>): Promise<T> => {
       if (!session) throw new AuthenticationRequiredError()
@@ -144,9 +158,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       session,
       isReady,
       authDialogOpen,
+      authDialogMode,
       accountDrawerOpen,
-      openAuthDialog: () => setAuthDialogOpen(true),
-      closeAuthDialog: () => setAuthDialogOpen(false),
+      openAuthDialog,
+      setAuthDialogMode,
+      closeAuthDialog,
       openAccountDrawer: () => setAccountDrawerOpen(true),
       closeAccountDrawer: () => setAccountDrawerOpen(false),
       signIn,
@@ -156,8 +172,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       accountDrawerOpen,
+      authDialogMode,
       authDialogOpen,
+      closeAuthDialog,
       isReady,
+      openAuthDialog,
       runAuthenticated,
       session,
       signIn,

@@ -1,31 +1,39 @@
 'use client'
 
-import { Search, SlidersHorizontal, X } from 'lucide-react'
+import Image from 'next/image'
+import { Search, SlidersHorizontal } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
+import movieLogo from '@/assets/logo.webp'
 import { cn } from '@/lib/cn'
 import { COUNTRIES, GENRES, MOVIE_TYPES } from '@/constants/movie'
+import { CONTAINER_CLASS } from '@/constants/layout'
 import { AccountControl } from '@/features/auth/components/AccountControl'
 import { useAuth } from '@/features/auth/auth-context'
 import type { MovieFilters } from '@/types/movie'
 
 interface SiteHeaderProps {
+  keyword?: string
   filters: MovieFilters
   onFiltersChange: (filters: MovieFilters) => void
   onApplyFilters: (filters?: MovieFilters) => void
   onSearch: (keyword: string) => void
+  overlay?: boolean
 }
 
 export function SiteHeader({
+  keyword = '',
   filters,
   onFiltersChange,
   onApplyFilters,
   onSearch,
+  overlay = false,
 }: SiteHeaderProps) {
-  const { openAuthDialog } = useAuth()
-  const [searchValue, setSearchValue] = useState('')
+  const { openAuthDialog, session } = useAuth()
+  const [searchDraft, setSearchDraft] = useState({ source: keyword, value: keyword })
   const [filterOpen, setFilterOpen] = useState(false)
   const years = Array.from({ length: 30 }, (_, index) => String(new Date().getFullYear() - index))
+  const searchValue = searchDraft.source === keyword ? searchDraft.value : keyword
 
   const updateFilter = (key: keyof MovieFilters, value: string) => {
     onFiltersChange({ ...filters, [key]: value })
@@ -42,23 +50,38 @@ export function SiteHeader({
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[color:var(--color-ink)/.72] shadow-lg shadow-black/20 backdrop-blur-xl">
-      <div className="mx-auto max-w-[100rem] px-4 sm:px-6 lg:px-8">
+    <header
+      className={cn(
+        'z-50',
+        overlay
+          ? 'absolute inset-x-0 top-0 border-b border-white/5 bg-transparent drop-shadow-[0_2px_10px_rgb(0_0_0/0.35)]'
+          : 'sticky top-0 border-b border-white/10 bg-[color:var(--color-ink)/.72] shadow-lg shadow-black/20 backdrop-blur-xl',
+      )}
+    >
+      <div className={CONTAINER_CLASS}>
         <div className="flex h-14 items-center gap-3">
           <Link
             href="/"
-            className="focus-ring shrink-0 text-lg font-black tracking-[0.02em] text-white sm:text-xl"
+            aria-label="Motchill - Trang chủ"
+            className="focus-ring flex h-11 w-[104px] shrink-0 items-center justify-center overflow-hidden rounded-md sm:h-12 sm:w-[120px]"
           >
-            <span className="text-[var(--color-primary-soft)]">Phim</span>Moi
+            <Image
+              src={movieLogo}
+              alt="Motchill"
+              width={480}
+              height={262}
+              priority
+              className="h-full w-full translate-y-1 scale-[1.3] object-cover"
+            />
           </Link>
 
           <form onSubmit={submitSearch} className="hidden min-w-0 max-w-xl flex-1 md:flex">
-            <label className="flex w-full items-center gap-3 rounded-full border border-white/15 bg-[var(--color-panel)]/90 px-3 py-1.5 text-sm text-[var(--color-muted)] shadow-inner shadow-black/10 transition focus-within:border-[var(--color-primary)] focus-within:ring-2 focus-within:ring-[var(--color-primary)]/20">
+            <label className="flex w-full items-center gap-3 rounded-full border border-white/20 bg-transparent px-3 py-1.5 text-sm text-white/80 shadow-lg shadow-black/20 transition focus-within:border-[var(--color-primary-soft)] focus-within:ring-2 focus-within:ring-[var(--color-primary)]/20">
               <Search className="size-4 shrink-0" />
               <input
                 aria-label="Tìm kiếm phim"
                 value={searchValue}
-                onChange={(event) => setSearchValue(event.target.value)}
+                onChange={(event) => setSearchDraft({ source: keyword, value: event.target.value })}
                 placeholder="Tìm kiếm phim..."
                 className="w-full bg-transparent text-white outline-none placeholder:text-[var(--color-muted)]"
               />
@@ -85,23 +108,25 @@ export function SiteHeader({
               <span className="hidden sm:inline">Bộ lọc</span>
             </button>
             <AccountControl compact />
-            <button
-              type="button"
-              onClick={openAuthDialog}
-              className="hidden h-8 rounded-md bg-[var(--color-primary-soft)] px-3 text-xs font-bold text-[var(--color-ink)] shadow-lg shadow-black/20 transition hover:bg-white sm:inline-flex sm:items-center"
-            >
-              Đăng ký ngay
-            </button>
+            {!session && (
+              <button
+                type="button"
+                onClick={() => openAuthDialog('register')}
+                className="hidden h-8 rounded-md border border-white/35 bg-transparent px-3 text-xs font-bold text-white shadow-lg shadow-black/25 transition hover:border-white hover:bg-white hover:text-[var(--color-ink)] sm:inline-flex sm:items-center"
+              >
+                Đăng ký ngay
+              </button>
+            )}
           </div>
         </div>
 
         <form onSubmit={submitSearch} className="flex pb-3 md:hidden">
-          <label className="flex w-full items-center gap-3 rounded-full border border-white/15 bg-[var(--color-panel)]/90 px-3 py-2 text-sm text-[var(--color-muted)] focus-within:border-[var(--color-primary)]">
+          <label className="flex w-full items-center gap-3 rounded-full border border-white/20 bg-transparent px-3 py-2 text-sm text-white/80 shadow-lg shadow-black/20 focus-within:border-[var(--color-primary-soft)]">
             <Search className="size-4 shrink-0" />
             <input
               aria-label="Tìm kiếm phim"
               value={searchValue}
-              onChange={(event) => setSearchValue(event.target.value)}
+              onChange={(event) => setSearchDraft({ source: keyword, value: event.target.value })}
               placeholder="Tìm kiếm phim..."
               className="w-full bg-transparent text-white outline-none placeholder:text-[var(--color-muted)]"
             />
@@ -113,15 +138,15 @@ export function SiteHeader({
       </div>
 
       {filterOpen && (
-        <div id="movie-filters" className="border-t border-white/10 bg-[color:var(--color-ink)/.96] px-4 py-4 shadow-2xl shadow-black/30 sm:px-6 lg:px-8">
-          <div className="mx-auto grid max-w-[100rem] items-stretch gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div id="movie-filters" className="border-t border-white/10 bg-[color:var(--color-ink)/.96] shadow-2xl shadow-black/30">
+          <div className={cn(CONTAINER_CLASS, 'grid items-stretch gap-3 py-3 md:grid-cols-5')}>
             {([
               ['type', 'Loại phim', 'Tất cả loại phim', MOVIE_TYPES],
               ['country', 'Quốc gia', 'Tất cả quốc gia', COUNTRIES],
               ['genre', 'Thể loại', 'Tất cả thể loại', GENRES],
               ['year', 'Năm phát hành', 'Tất cả năm', years.map((year) => ({ label: year, slug: year }))],
             ] as const).map(([key, label, placeholder, options]) => (
-              <label key={key} className="block">
+              <label key={key} className="block min-w-0">
                 <span className="sr-only">{label}</span>
                 <select
                   aria-label={label}

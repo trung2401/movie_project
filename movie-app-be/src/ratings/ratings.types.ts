@@ -1,4 +1,5 @@
 import { Rating } from './entities/rating.entity'
+import { PaginatedResponse } from '../common/dto/pagination-query.dto'
 
 export interface RatingResponse {
   id: string
@@ -10,11 +11,15 @@ export interface RatingResponse {
   updatedAt: Date
 }
 
+export type RatingListResponse = PaginatedResponse<RatingResponse>
+
 export interface RatingAverageResponse {
   movieSlug: string
   averageScore: number | null
   totalRatings: number
 }
+
+export type RatingSummaryResponse = RatingAverageResponse
 
 export function toRatingResponse(rating: Rating): RatingResponse {
   return {

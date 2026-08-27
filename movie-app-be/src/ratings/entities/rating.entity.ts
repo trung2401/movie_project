@@ -15,6 +15,7 @@ import { User } from '../../users/entities/user.entity'
 @Entity('ratings')
 @Unique(['user', 'movieSlug'])
 @Index(['movieSlug'])
+@Index(['user', 'updatedAt'])
 export class Rating {
   @PrimaryGeneratedColumn('uuid')
   id: string

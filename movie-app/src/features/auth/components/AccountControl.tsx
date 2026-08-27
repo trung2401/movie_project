@@ -15,7 +15,7 @@ export function AccountControl({ compact = false }: { compact?: boolean }) {
     return (
       <button
         type="button"
-        onClick={openAuthDialog}
+        onClick={() => openAuthDialog()}
         className={cn(
           'focus-ring inline-flex items-center gap-2 border text-white transition hover:border-[var(--color-primary)]',
           compact

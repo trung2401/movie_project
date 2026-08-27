@@ -6,9 +6,21 @@ import {
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 
+import {
+  getPagination,
+  PaginationQueryDto,
+  toPaginatedResponse,
+} from '../common/dto/pagination-query.dto'
 import { CreateFavoriteDto } from './dto/create-favorite.dto'
 import { Favorite } from './entities/favorite.entity'
-import { FavoriteResponse, toFavoriteResponse } from './favorites.types'
+import {
+  FavoriteListResponse,
+  FavoriteResponse,
+  FavoriteSummaryResponse,
+  toFavoriteResponse,
+} from './favorites.types'
+
+const DEFAULT_FAVORITES_LIMIT = 20
 
 @Injectable()
 export class FavoritesService {
@@ -52,12 +64,46 @@ export class FavoritesService {
     }
   }
 
-  async findAllForUser(userId: string): Promise<FavoriteResponse[]> {
-    const favorites = await this.favoritesRepository.find({
-      where: { user: { id: userId } },
-      order: { addedAt: 'DESC' },
+  async findAllForUser(
+    userId: string,
+    query: PaginationQueryDto = {},
+  ): Promise<FavoriteListResponse> {
+    const { limit, offset } = getPagination(query, DEFAULT_FAVORITES_LIMIT)
+    const [favorites, totalItems] = await this.favoritesRepository.findAndCount(
+      {
+        where: { user: { id: userId } },
+        order: { addedAt: 'DESC' },
+        skip: offset,
+        take: limit,
+      },
+    )
+    return toPaginatedResponse(
+      favorites.map(toFavoriteResponse),
+      totalItems,
+      limit,
+      offset,
+    )
+  }
+
+  async getSummaryForUser(userId: string): Promise<FavoriteSummaryResponse> {
+    return {
+      totalItems: await this.favoritesRepository.count({
+        where: { user: { id: userId } },
+      }),
+    }
+  }
+
+  async findOneForUser(
+    userId: string,
+    movieSlug: string,
+  ): Promise<FavoriteResponse | null> {
+    const favorite = await this.favoritesRepository.findOne({
+      where: {
+        user: { id: userId },
+        movieSlug: movieSlug.trim().toLowerCase(),
+      },
     })
-    return favorites.map(toFavoriteResponse)
+    return favorite ? toFavoriteResponse(favorite) : null
   }
 
   async remove(userId: string, movieSlug: string): Promise<void> {

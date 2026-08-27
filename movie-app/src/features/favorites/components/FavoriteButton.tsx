@@ -3,11 +3,7 @@
 import { Heart, LoaderCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/features/auth/auth-context'
-import {
-  createFavorite,
-  deleteFavorite,
-  getFavorites,
-} from '@/services/userApi'
+import { useUserData } from '@/features/user-data/user-data-context'
 
 export function FavoriteButton({
   movieSlug,
@@ -16,7 +12,12 @@ export function FavoriteButton({
   movieSlug: string
   movieName: string
 }) {
-  const { isReady, openAuthDialog, runAuthenticated, session } = useAuth()
+  const { isReady, openAuthDialog, session } = useAuth()
+  const {
+    createFavorite,
+    deleteFavorite,
+    getFavoriteStatus,
+  } = useUserData()
   const [isFavorite, setIsFavorite] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -25,15 +26,12 @@ export function FavoriteButton({
     if (!session) return
 
     let active = true
-    void runAuthenticated(getFavorites)
-      .then((favorites) => {
+    void getFavoriteStatus(movieSlug)
+      .then((favorite) => {
         if (active) {
-          const favorite = favorites.find((item) => item.movieSlug === movieSlug)
           setIsFavorite(Boolean(favorite))
           if (favorite && favorite.movieName !== movieName) {
-            return runAuthenticated((accessToken) =>
-              createFavorite(accessToken, movieSlug, movieName),
-            )
+            return createFavorite(movieSlug, movieName)
           }
         }
       })
@@ -44,7 +42,7 @@ export function FavoriteButton({
     return () => {
       active = false
     }
-  }, [movieName, movieSlug, runAuthenticated, session])
+  }, [createFavorite, getFavoriteStatus, movieName, movieSlug, session])
 
   async function toggleFavorite() {
     if (!session) {
@@ -56,13 +54,9 @@ export function FavoriteButton({
     setError('')
     try {
       if (activeFavorite) {
-        await runAuthenticated((accessToken) =>
-          deleteFavorite(accessToken, movieSlug),
-        )
+        await deleteFavorite(movieSlug)
       } else {
-        await runAuthenticated((accessToken) =>
-          createFavorite(accessToken, movieSlug, movieName),
-        )
+        await createFavorite(movieSlug, movieName)
       }
       setIsFavorite((value) => !value)
     } catch (caughtError) {
@@ -91,7 +85,7 @@ export function FavoriteButton({
         type="button"
         onClick={() => void toggleFavorite()}
         disabled={!isReady || loading}
-        className={`focus-ring inline-flex size-10 items-center justify-center rounded-lg border transition disabled:cursor-wait disabled:opacity-60 ${
+        className={`focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-bold transition disabled:cursor-wait disabled:opacity-60 ${
           activeFavorite
             ? 'border-rose-300/60 bg-rose-400/15 text-rose-200'
             : 'border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-muted)] hover:border-rose-300/60 hover:text-rose-200'
@@ -104,6 +98,7 @@ export function FavoriteButton({
         ) : (
           <Heart className={`size-4 ${activeFavorite ? 'fill-current' : ''}`} />
         )}
+        <span>Yêu thích</span>
       </button>
       {error && <span className="text-xs text-rose-200">{error}</span>}
     </div>

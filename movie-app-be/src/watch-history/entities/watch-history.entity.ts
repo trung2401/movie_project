@@ -12,8 +12,9 @@ import {
 import { User } from '../../users/entities/user.entity'
 
 @Entity('watch_history')
-@Unique(['user', 'episodeSlug'])
+@Unique(['user', 'movieSlug', 'episodeSlug'])
 @Index(['movieSlug'])
+@Index(['user', 'updatedAt'])
 export class WatchHistory {
   @PrimaryGeneratedColumn('uuid')
   id: string

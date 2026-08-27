@@ -1,11 +1,24 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common'
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto'
 import { UpsertWatchHistoryDto } from './dto/upsert-watch-history.dto'
 import { WatchHistoryService } from './watch-history.service'
-import { WatchHistoryResponse } from './watch-history.types'
+import {
+  WatchHistoryListResponse,
+  WatchHistoryResponse,
+  WatchHistorySummaryResponse,
+} from './watch-history.types'
 
 @Controller('watch-history')
 @UseGuards(JwtAuthGuard)
@@ -23,7 +36,28 @@ export class WatchHistoryController {
   @Get('continue-watching')
   findContinueWatching(
     @CurrentUser() user: JwtPayload,
-  ): Promise<WatchHistoryResponse[]> {
-    return this.watchHistoryService.findContinueWatching(user.sub)
+    @Query() query: PaginationQueryDto,
+  ): Promise<WatchHistoryListResponse> {
+    return this.watchHistoryService.findContinueWatching(user.sub, query)
+  }
+
+  @Get('summary')
+  getSummary(
+    @CurrentUser() user: JwtPayload,
+  ): Promise<WatchHistorySummaryResponse> {
+    return this.watchHistoryService.getSummaryForUser(user.sub)
+  }
+
+  @Get(':movieSlug/:episodeSlug')
+  findOne(
+    @CurrentUser() user: JwtPayload,
+    @Param('movieSlug') movieSlug: string,
+    @Param('episodeSlug') episodeSlug: string,
+  ): Promise<WatchHistoryResponse | null> {
+    return this.watchHistoryService.findOneForEpisode(
+      user.sub,
+      movieSlug,
+      episodeSlug,
+    )
   }
 }

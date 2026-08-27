@@ -1,6 +1,6 @@
 import { API_BASE, DEFAULT_IMAGE_BASE_URL, LATEST_MOVIES_ENDPOINT } from '@/constants/movie'
 import { movieProviderManager } from './providers'
-import type { Episode, Movie, MovieFilters, MovieListResult } from '@/types/movie'
+import type { Movie, MovieFilters, MovieListResult } from '@/types/movie'
 
 export function buildMoviesEndpoint(filters: MovieFilters, keyword = '', page = 1) {
   const { type, country, genre, year } = filters
@@ -30,10 +30,6 @@ export function buildMoviesEndpoint(filters: MovieFilters, keyword = '', page = 
 
 export async function getMovieList(endpoint = LATEST_MOVIES_ENDPOINT): Promise<MovieListResult> {
   return movieProviderManager.getMovieListWithFallback(endpoint)
-}
-
-export function getFallbackEpisodes(slug: string): Episode[] {
-  return [{ name: '1', slug: `${slug}-tap-1`, link_embed: 'https://www.youtube.com/embed/dQw4w9WgXcQ' }]
 }
 
 export async function getMovieDetail(slug: string): Promise<Movie> {

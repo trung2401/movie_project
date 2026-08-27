@@ -58,6 +58,23 @@ export interface RatingAverage {
   totalRatings: number
 }
 
+export interface PaginatedResponse<T> {
+  items: T[]
+  limit: number
+  offset: number
+  totalItems: number
+  hasNextPage: boolean
+}
+
+export type FavoriteList = PaginatedResponse<Favorite>
+export type WatchHistoryList = PaginatedResponse<WatchHistory>
+export type RatingList = PaginatedResponse<Rating>
+
+export interface PaginationOptions {
+  limit?: number
+  offset?: number
+}
+
 export class UserApiError extends Error {
   constructor(
     message: string,
@@ -131,8 +148,30 @@ export function refreshAccessToken(
   })
 }
 
-export function getFavorites(accessToken: string): Promise<Favorite[]> {
-  return request<Favorite[]>('/favorites', { accessToken })
+function withPagination(path: string, options?: PaginationOptions): string {
+  if (!options || (options.limit === undefined && options.offset === undefined)) {
+    return path
+  }
+  const params = new URLSearchParams()
+  if (options.limit !== undefined) params.set('limit', String(options.limit))
+  if (options.offset !== undefined) params.set('offset', String(options.offset))
+  return `${path}?${params.toString()}`
+}
+
+export function getFavorites(
+  accessToken: string,
+  options?: PaginationOptions,
+): Promise<FavoriteList> {
+  return request<FavoriteList>(withPagination('/favorites', options), { accessToken })
+}
+
+export function getFavoriteStatus(
+  accessToken: string,
+  movieSlug: string,
+): Promise<Favorite | null> {
+  return request<Favorite | null>(`/favorites/${encodeURIComponent(movieSlug)}`, {
+    accessToken,
+  })
 }
 
 export function createFavorite(
@@ -154,10 +193,27 @@ export function deleteFavorite(accessToken: string, movieSlug: string): Promise<
   })
 }
 
-export function getContinueWatching(accessToken: string): Promise<WatchHistory[]> {
-  return request<WatchHistory[]>('/watch-history/continue-watching', {
+export function getContinueWatching(
+  accessToken: string,
+  options?: PaginationOptions,
+): Promise<WatchHistoryList> {
+  return request<WatchHistoryList>(
+    withPagination('/watch-history/continue-watching', options),
+    {
     accessToken,
-  })
+    },
+  )
+}
+
+export function getWatchHistory(
+  accessToken: string,
+  movieSlug: string,
+  episodeSlug: string,
+): Promise<WatchHistory | null> {
+  return request<WatchHistory | null>(
+    `/watch-history/${encodeURIComponent(movieSlug)}/${encodeURIComponent(episodeSlug)}`,
+    { accessToken },
+  )
 }
 
 export function saveWatchHistory(
@@ -174,13 +230,18 @@ export function saveWatchHistory(
   })
 }
 
-export function getRatings(movieSlug: string): Promise<Rating[]> {
-  return request<Rating[]>(`/ratings/${encodeURIComponent(movieSlug)}`)
+export function getRatings(
+  movieSlug: string,
+  options?: PaginationOptions,
+): Promise<RatingList> {
+  return request<RatingList>(
+    withPagination(`/ratings/${encodeURIComponent(movieSlug)}`, options),
+  )
 }
 
 export function getRatingAverage(movieSlug: string): Promise<RatingAverage> {
   return request<RatingAverage>(
-    `/ratings/${encodeURIComponent(movieSlug)}/average`,
+    `/ratings/${encodeURIComponent(movieSlug)}/summary`,
   )
 }
 

@@ -1,4 +1,5 @@
 import { WatchHistory } from './entities/watch-history.entity'
+import { PaginatedResponse } from '../common/dto/pagination-query.dto'
 
 export interface WatchHistoryResponse {
   id: string
@@ -7,6 +8,13 @@ export interface WatchHistoryResponse {
   episodeSlug: string
   progressSeconds: number
   updatedAt: Date
+}
+
+export type WatchHistoryListResponse = PaginatedResponse<WatchHistoryResponse>
+
+export interface WatchHistorySummaryResponse {
+  totalItems: number
+  latestUpdatedAt: Date | null
 }
 
 export function toWatchHistoryResponse(

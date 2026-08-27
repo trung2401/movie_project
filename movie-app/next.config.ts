@@ -2,8 +2,11 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ['192.168.14.61'],
+  turbopack: {
+    root: process.cwd(),
+  },
   experimental: {
-    useTypeScriptCli: true,
+    useTypeScriptCli: false,
   },
   images: {
     remotePatterns: [
@@ -12,6 +15,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'phimimg.com' },      // domain ảnh thumbnail/poster
       { protocol: 'https', hostname: '*.phimimg.com' },     // phòng trường hợp có subdomain (cdn., img....)
       { protocol: 'https', hostname: 'img.ophim.live' },
+      { protocol: 'https', hostname: 'i.ex-cdn.com' },
     ],
   },
 }

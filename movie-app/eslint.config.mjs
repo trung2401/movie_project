@@ -1,3 +1,9 @@
+import { globalIgnores } from 'eslint/config'
 import nextConfig from 'eslint-config-next'
 
-export default nextConfig
+const eslintConfig = [
+  ...nextConfig,
+  globalIgnores(['**/.next/**']),
+]
+
+export default eslintConfig

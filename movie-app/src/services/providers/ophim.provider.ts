@@ -4,6 +4,7 @@ import axios from 'axios'
 import { API_BASE_OPHIM, OPHIM_IMAGE_BASE_URL } from '@/constants/movie'
 import type { Episode, EpisodeServer, Movie, MovieListResult } from '@/types/movie'
 import type { MovieProvider } from './types'
+import { createMovieListPagination, getRequestedPage } from './pagination'
 
 const REQUEST_TIMEOUT_MS = 5_000
 
@@ -73,7 +74,7 @@ function mapOphimToMovie(movieValue: unknown, episodesValue?: unknown): Movie | 
   }
 }
 
-function mapOphimList(payload: unknown): MovieListResult {
+function mapOphimList(payload: unknown, requestedPage: number): MovieListResult {
   const root = isRecord(payload) ? payload : {}
   const rawItems = Array.isArray(root.items) ? root.items : []
   const items = rawItems.flatMap((item) => {
@@ -81,7 +82,11 @@ function mapOphimList(payload: unknown): MovieListResult {
     return movie ? [movie] : []
   })
 
-  return { items, baseUrl: readString(root.pathImage) ?? OPHIM_IMAGE_BASE_URL }
+  return {
+    items,
+    baseUrl: readString(root.pathImage) ?? OPHIM_IMAGE_BASE_URL,
+    pagination: createMovieListPagination(root.pagination, items.length, requestedPage),
+  }
 }
 
 function getOphimListEndpoint(endpoint: string): string {
@@ -97,7 +102,7 @@ export const ophimProvider: MovieProvider = {
 
   async getMovieList(endpoint) {
     const response = await axios.get<unknown>(getOphimListEndpoint(endpoint), { timeout: REQUEST_TIMEOUT_MS })
-    return mapOphimList(response.data)
+    return mapOphimList(response.data, getRequestedPage(endpoint))
   },
 
   async getMovieDetail(slug) {

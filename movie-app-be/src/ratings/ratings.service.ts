@@ -2,13 +2,21 @@ import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 
+import {
+  getPagination,
+  PaginationQueryDto,
+  toPaginatedResponse,
+} from '../common/dto/pagination-query.dto'
 import { CreateRatingDto } from './dto/create-rating.dto'
 import { Rating } from './entities/rating.entity'
 import {
   RatingAverageResponse,
+  RatingListResponse,
   RatingResponse,
   toRatingResponse,
 } from './ratings.types'
+
+const DEFAULT_RATINGS_LIMIT = 10
 
 interface RatingAggregate {
   averageScore: string | null
@@ -45,13 +53,24 @@ export class RatingsService {
     return toRatingResponse(savedRating)
   }
 
-  async findByMovieSlug(movieSlug: string): Promise<RatingResponse[]> {
-    const ratings = await this.ratingsRepository.find({
+  async findByMovieSlug(
+    movieSlug: string,
+    query: PaginationQueryDto = {},
+  ): Promise<RatingListResponse> {
+    const { limit, offset } = getPagination(query, DEFAULT_RATINGS_LIMIT)
+    const [ratings, totalItems] = await this.ratingsRepository.findAndCount({
       where: { movieSlug: movieSlug.trim().toLowerCase() },
       relations: { user: true },
-      order: { createdAt: 'DESC' },
+      order: { updatedAt: 'DESC' },
+      skip: offset,
+      take: limit,
     })
-    return ratings.map(toRatingResponse)
+    return toPaginatedResponse(
+      ratings.map(toRatingResponse),
+      totalItems,
+      limit,
+      offset,
+    )
   }
 
   async getAverage(movieSlug: string): Promise<RatingAverageResponse> {
