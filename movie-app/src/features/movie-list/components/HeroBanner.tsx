@@ -2,13 +2,12 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight, Play } from 'lucide-react'
+import { ArrowRight, ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react'
 import { useState } from 'react'
-import { useEffect } from 'react'
 import type { SyntheticEvent } from 'react'
 import { CONTAINER_CLASS } from '@/constants/layout'
 import { getMovieDescription } from '@/lib/movieText'
-import { getMovieDetail } from '@/services/movieApi'
+import { getMovieAggregateRating, getMovieLanguage } from '@/lib/seo'
 import type { Movie } from '@/types/movie'
 import { cn } from '@/lib/cn'
 import { FavoriteButton } from '@/features/favorites/components/FavoriteButton'
@@ -36,7 +35,7 @@ function splitMovieTitle(name: string) {
   }
 }
 
-function getMovieGenres(movie: Movie) {
+function getHeroGenres(movie: Movie) {
   const metadata = movie as OptionalMovieMetadata
   const rawGenres = metadata.category ?? metadata.genre
 
@@ -82,7 +81,7 @@ function HeroSlideImage({ movie, imageBaseUrl, priority }: HeroSlideImageProps) 
       )}
       <Image
         src={imageSrc}
-        alt={`${movie.name} - xem phim online`}
+        alt={movie.name}
         fill
         priority={priority}
         sizes="100vw"
@@ -122,45 +121,26 @@ function HeroBannerSkeleton() {
 }
 
 export function HeroBanner({ movies, imageBaseUrl, loading }: { movies: Movie[]; imageBaseUrl: string; loading: boolean }) {
-  const [paused, setPaused] = useState(false)
-  const [hydratedHeroMovies, setHydratedHeroMovies] = useState<Movie[]>([])
+  const [isHovered, setIsHovered] = useState(false)
+  const [manualPaused, setManualPaused] = useState(false)
   const { currentIndex, goTo } = useHeroCarousel({
     itemCount: Math.min(movies.length, 5),
-    paused,
+    paused: isHovered || manualPaused,
   })
-  const heroMovies = movies.slice(0, 5).map((movie) =>
-    hydratedHeroMovies.find((hydratedMovie) => hydratedMovie.slug === movie.slug) ?? movie,
-  )
-
-  useEffect(() => {
-    const candidates = movies.slice(0, 5)
-    let active = true
-
-    const missingDescriptions = candidates.filter((movie) => !movie.content?.trim())
-    if (!missingDescriptions.length) return () => { active = false }
-
-    void Promise.all(
-      missingDescriptions.map(async (movie) => {
-        try {
-          const detail = await getMovieDetail(movie.slug)
-          return detail?.content?.trim() ? { ...movie, content: detail.content } : movie
-        } catch {
-          return movie
-        }
-      }),
-    ).then((hydratedMovies) => {
-      if (!active) return
-      const hydratedBySlug = new Map(hydratedMovies.map((movie) => [movie.slug, movie]))
-      setHydratedHeroMovies(candidates.map((movie) => hydratedBySlug.get(movie.slug) ?? movie))
-    })
-
-    return () => {
-      active = false
-    }
-  }, [movies])
+  const heroMovies = movies.slice(0, 5)
 
   const activeMovie = heroMovies[currentIndex]
   const activeTitle = activeMovie ? splitMovieTitle(activeMovie.name) : { eyebrow: '', title: '' }
+  const rating = activeMovie ? getMovieAggregateRating(activeMovie)?.ratingValue : undefined
+  const language = activeMovie ? getMovieLanguage(activeMovie) ?? activeMovie.lang ?? activeMovie.language : undefined
+  const episodeCount = activeMovie?.episodes?.reduce((count, server) => count + server.server_data.length, 0) ?? 0
+  const quality = (activeMovie as (Movie & { quality?: string }) | undefined)?.quality
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLElement>) {
+    if (event.key === 'ArrowLeft') { event.preventDefault(); goTo(currentIndex - 1) }
+    if (event.key === 'ArrowRight') { event.preventDefault(); goTo(currentIndex + 1) }
+    if (event.key === ' ') { event.preventDefault(); setManualPaused((value) => !value) }
+  }
 
   if (loading) return <HeroBannerSkeleton />
   if (!heroMovies.length || !activeMovie) return null
@@ -169,9 +149,11 @@ export function HeroBanner({ movies, imageBaseUrl, loading }: { movies: Movie[];
     <>
       <section
         aria-label="Phim nổi bật"
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
         className="relative isolate min-h-[430px] overflow-hidden border-t border-[var(--color-line)] bg-[var(--color-ink)] sm:min-h-[500px] lg:min-h-[680px]"
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => setPaused(false)}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
         <div aria-hidden="true" className="absolute inset-0 bg-[var(--color-ink)]" />
 
@@ -202,23 +184,20 @@ export function HeroBanner({ movies, imageBaseUrl, loading }: { movies: Movie[];
                 {activeTitle.eyebrow}:
               </p>
             )}
-            <h2 className="mt-2 max-w-3xl text-4xl font-black uppercase leading-[0.98] text-white sm:text-6xl lg:text-7xl">
+            <h2 className="mt-2 max-w-3xl text-4xl font-black leading-[1.02] tracking-tight text-white sm:text-6xl lg:text-7xl">
               {activeTitle.title}
             </h2>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-xs font-semibold text-white/80 lg:justify-start sm:text-sm">
+              {activeMovie.year && <span>{activeMovie.year}</span>}
+              {rating !== undefined && <span className="text-[var(--color-warning)]">★ {Number(rating).toFixed(1)}</span>}
+              {language && <span>{language}</span>}
+              {quality && <span>{quality}</span>}
+              {episodeCount > 0 && <span>{episodeCount} tập</span>}
+              {getHeroGenres(activeMovie).slice(0, 3).map((genre) => <span key={genre} className="text-white/65">{genre}</span>)}
+            </div>
             <p className="mt-5 line-clamp-2 max-w-xl text-sm leading-6 text-white/75 sm:text-base">
               {getMovieDescription(activeMovie.content)}
             </p>
-
-            {getMovieGenres(activeMovie).length > 0 && (
-              <p className="mt-4 flex flex-wrap justify-center gap-x-2 gap-y-1 text-xs font-semibold text-white/75 sm:text-sm lg:justify-start">
-                {getMovieGenres(activeMovie).map((genre, index) => (
-                  <span key={`${activeMovie.slug}-${genre}`}>
-                    {index > 0 && <span className="mr-2 text-[var(--color-primary-soft)]">|</span>}
-                    {genre}
-                  </span>
-                ))}
-              </p>
-            )}
 
             <div className="mt-6 flex flex-wrap justify-center gap-3 lg:justify-start">
               <Link
@@ -226,7 +205,7 @@ export function HeroBanner({ movies, imageBaseUrl, loading }: { movies: Movie[];
                 className="focus-ring inline-flex min-h-11 min-w-40 items-center justify-center gap-2 rounded-lg bg-white px-5 py-3 text-sm font-bold text-[var(--color-ink)] shadow-xl shadow-black/25 transition hover:-translate-y-0.5 hover:bg-[var(--color-primary-soft)]"
               >
                 <Play className="size-4 fill-current" />
-                Xem phim ngay
+                Xem ngay
                 <ArrowRight className="size-4" />
               </Link>
               <FavoriteButton movieSlug={activeMovie.slug} movieName={activeMovie.name} />
@@ -255,6 +234,13 @@ export function HeroBanner({ movies, imageBaseUrl, loading }: { movies: Movie[];
             </button>
           ))}
         </div>
+        <div className="absolute bottom-5 right-4 z-40 flex items-center gap-1.5 sm:bottom-7 sm:right-8">
+          <button type="button" onClick={() => goTo(currentIndex - 1)} className="focus-ring inline-flex size-10 items-center justify-center rounded-lg border border-white/20 bg-black/30 text-white backdrop-blur transition hover:bg-black/60" aria-label="Phim nổi bật trước"><ChevronLeft className="size-4" /></button>
+          <button type="button" onClick={() => setManualPaused((value) => !value)} className="focus-ring inline-flex size-10 items-center justify-center rounded-lg border border-white/20 bg-black/30 text-white backdrop-blur transition hover:bg-black/60" aria-label={manualPaused ? 'Tiếp tục tự động chuyển phim' : 'Tạm dừng tự động chuyển phim'} aria-pressed={manualPaused}>{manualPaused ? <Play className="size-4 fill-current" /> : <Pause className="size-4" />}</button>
+          <button type="button" onClick={() => goTo(currentIndex + 1)} className="focus-ring inline-flex size-10 items-center justify-center rounded-lg border border-white/20 bg-black/30 text-white backdrop-blur transition hover:bg-black/60" aria-label="Phim nổi bật tiếp theo"><ChevronRight className="size-4" /></button>
+        </div>
+        <div className="absolute bottom-0 left-0 z-40 h-0.5 w-full bg-white/15" aria-hidden="true"><span key={currentIndex} className="block h-full origin-left animate-[hero-progress_6s_linear] bg-[var(--color-primary)]" style={{ animationPlayState: isHovered || manualPaused ? 'paused' : 'running' }} /></div>
+        <p className="sr-only" aria-live="polite">Đang chọn phim {activeMovie.name}</p>
       </section>
     </>
   )

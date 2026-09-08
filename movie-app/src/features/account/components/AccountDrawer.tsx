@@ -2,7 +2,7 @@
 
 import { Clock3, Heart, LogOut, RefreshCw, X } from 'lucide-react'
 import Link from 'next/link'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/features/auth/auth-context'
 import { useUserData } from '@/features/user-data/user-data-context'
 import type { Favorite, WatchHistory } from '@/services/userApi'
@@ -27,6 +27,7 @@ export function AccountDrawer() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [removingSlug, setRemovingSlug] = useState('')
+  const drawerRef = useRef<HTMLElement>(null)
 
   const loadLibrary = useCallback(async (force = false) => {
     if (!session) return
@@ -56,6 +57,25 @@ export function AccountDrawer() {
     return () => window.clearTimeout(requestId)
   }, [accountDrawerOpen, loadLibrary])
 
+  useEffect(() => {
+    if (!accountDrawerOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    drawerRef.current?.querySelector<HTMLElement>('button, a[href]')?.focus()
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); closeAccountDrawer(); return }
+      if (event.key !== 'Tab' || !drawerRef.current) return
+      const elements = Array.from(drawerRef.current.querySelectorAll<HTMLElement>('button, a[href]')).filter((element) => !element.hasAttribute('disabled'))
+      if (!elements.length) return
+      const first = elements[0]
+      const last = elements[elements.length - 1]
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => { document.body.style.overflow = previousOverflow; document.removeEventListener('keydown', handleKeyDown) }
+  }, [accountDrawerOpen, closeAccountDrawer])
+
   if (!accountDrawerOpen || !session) return null
 
   async function removeFavorite(movieSlug: string) {
@@ -84,8 +104,9 @@ export function AccountDrawer() {
         aria-label="Đóng khu vực tài khoản"
       />
       <aside
+        ref={drawerRef}
         aria-label="Tài khoản"
-        className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col border-l border-[var(--color-line)] bg-[var(--color-ink)] shadow-2xl shadow-black/40"
+        className="absolute inset-y-0 right-0 flex w-full max-w-md animate-[drawer-in_180ms_ease-out] flex-col border-l border-[var(--color-line)] bg-[var(--color-ink)] shadow-2xl shadow-black/40"
       >
         <header className="flex items-start justify-between border-b border-[var(--color-line)] px-5 py-5">
           <div className="min-w-0">

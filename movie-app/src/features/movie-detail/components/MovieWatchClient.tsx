@@ -1,12 +1,12 @@
 'use client'
 
 import Image from 'next/image'
-import { ArrowLeft, CalendarDays, Clapperboard } from 'lucide-react'
+import { CalendarDays, Clapperboard } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Episode, EpisodeServer, Movie } from '@/types/movie'
-import { AccountControl } from '@/features/auth/components/AccountControl'
+import { SiteHeader } from '@/components/layout/SiteHeader'
 import { useAuth } from '@/features/auth/auth-context'
 import { FavoriteButton } from '@/features/favorites/components/FavoriteButton'
 import { RatingsPanel } from '@/features/ratings/components/RatingsPanel'
@@ -155,17 +155,7 @@ export function MovieWatchClient({
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-40 border-b border-[color:var(--color-line)/.75] bg-[color:var(--color-ink)/.86] shadow-lg shadow-black/10 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[100rem] items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
-          <button type="button" onClick={handleBackToList} className="focus-ring inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm font-bold text-[var(--color-muted)] transition hover:bg-[var(--color-panel)] hover:text-white">
-            <ArrowLeft className="size-4" />
-            Danh sách phim
-          </button>
-          <span className="h-4 w-px bg-[var(--color-line)]" />
-          <span className="truncate text-sm font-bold text-white sm:text-base">{movie.name}</span>
-          <div className="ml-auto"><AccountControl /></div>
-        </div>
-      </header>
+      <SiteHeader showFilters={false} />
       <main className="mx-auto max-w-[88rem] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
         <nav aria-label="Breadcrumb" className="mb-4 flex flex-wrap items-center gap-2 text-xs text-[var(--color-muted)]">
           <Link href="/" className="focus-ring transition hover:text-white">Trang chủ</Link>
@@ -174,12 +164,15 @@ export function MovieWatchClient({
           <span aria-hidden="true">/</span>
           <span aria-current="page" className="truncate text-white">{movie.name}</span>
         </nav>
-        <div className="rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] p-2 shadow-xl shadow-black/20 sm:p-3">
+        <div className="overflow-hidden rounded-lg border border-[var(--color-line)] bg-black p-1 shadow-2xl shadow-black/30 sm:p-2">
           <VideoPlayer embedLink={currentEpisode?.link_embed} title={`${movie.name} - Tập ${currentEpisode?.name || ''}`} />
         </div>
 
-        <section className="mt-6 border-b border-[var(--color-line)] pb-6">
-          <div className="flex flex-col gap-6 sm:flex-row">
+        <section className="relative mt-6 overflow-hidden rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-4 sm:p-6">
+          <div className="pointer-events-none absolute inset-0 opacity-20" aria-hidden="true">
+            <Image src={getMovieImageUrl(movie)} alt="" fill sizes="100vw" className="object-cover blur-2xl" />
+          </div>
+          <div className="relative flex flex-col gap-6 sm:flex-row">
             <div className="relative aspect-[2/3] w-36 shrink-0 overflow-hidden rounded-lg border border-[var(--color-line)] bg-[var(--color-panel-soft)] shadow-lg shadow-black/20">
               <Image
                 src={getMovieImageUrl(movie)}
@@ -207,18 +200,18 @@ export function MovieWatchClient({
           </div>
         </section>
 
-        <div className="mt-6 space-y-6">
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(18rem,.9fr)] lg:items-start">
           {selectedServer ? (
             <>
-              <div className="rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] p-4 shadow-md shadow-black/10 sm:p-5">
+              <div className="rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-4 sm:p-5">
                 <ServerSelector servers={servers} selectedServer={selectedServer} onServerSelect={selectServer} />
               </div>
-              <div className="rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] p-4 shadow-md shadow-black/10 sm:p-5">
+              <div className="rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-4 sm:p-5">
                 <EpisodeList episodes={selectedServer.server_data} currentEpisode={currentEpisode} onEpisodeSelect={selectEpisode} />
               </div>
             </>
           ) : (
-            <div className="rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] p-5 text-sm text-[var(--color-muted)]">
+            <div className="rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-5 text-sm text-[var(--color-muted)]">
               Không thể tải nguồn phát
             </div>
           )}

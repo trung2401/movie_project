@@ -111,23 +111,15 @@ export function RatingsPanel({ movieSlug }: { movieSlug: string }) {
       )}
 
       <form onSubmit={submitRating} className="mt-5 grid gap-3 border-y border-[var(--color-line)] py-5 sm:grid-cols-[8rem_1fr_auto] sm:items-end">
-        <label className="block text-sm font-semibold text-white">
-          Điểm
-          <select
-            value={score}
-            onChange={(event) => setScore(event.target.value)}
-            disabled={!isReady || submitting}
-            className="focus-ring mt-2 h-10 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-ink)] px-3 text-sm text-white outline-none focus:border-[var(--color-primary)]"
-          >
-            {Array.from({ length: 10 }, (_, index) => String(index + 1)).map(
-              (value) => (
-                <option key={value} value={value}>
-                  {value}/10
-                </option>
-              ),
-            )}
-          </select>
-        </label>
+        <div className="block text-sm font-semibold text-white">
+          <span>Điểm</span>
+          <span className="mt-2 flex min-h-10 items-center gap-1 rounded-lg border border-[var(--color-line)] bg-[var(--color-ink)] px-2" role="radiogroup" aria-label="Chọn điểm từ 1 đến 10">
+            {Array.from({ length: 10 }, (_, index) => String(index + 1)).map((value) => {
+              const selected = score === value
+              return <button key={value} type="button" role="radio" aria-label={`${value} trên 10`} aria-checked={selected} disabled={!isReady || submitting} onClick={() => setScore(value)} className={`focus-ring inline-flex size-7 items-center justify-center rounded text-xs font-bold transition ${selected ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--color-muted)] hover:bg-[var(--color-panel-soft)] hover:text-white'}`}>{value}</button>
+            })}
+          </span>
+        </div>
         <label className="block text-sm font-semibold text-white">
           Bình luận
           <input

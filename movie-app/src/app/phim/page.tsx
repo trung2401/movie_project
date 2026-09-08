@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
-import { MovieListClient } from '@/features/movie-list/components/MovieListClient'
+import { CatalogMovieList } from '@/features/movie-list/components/MovieListClient'
 import { loadInitialMovieList } from '@/features/movie-list/server/loadInitialMovieList'
 import { parseMovieListQuery, type MovieListSearchParams } from '@/features/movie-list/utils/parseMovieListQuery'
 import { getMovieListMetadata } from '@/lib/seo'
@@ -23,14 +23,13 @@ export default async function MoviesPage({
 
   return (
     <Suspense fallback={null}>
-      <MovieListClient
+      <CatalogMovieList
         key={`${query.keyword}|${query.filters.type}|${query.filters.country}|${query.filters.genre}|${query.filters.year}|${query.page}`}
         initialFilters={query.filters}
         initialKeyword={query.keyword}
         initialPage={query.page}
         initialResult={initialMovieList.result}
         initialError={initialMovieList.error}
-        showHero={false}
       />
     </Suspense>
   )

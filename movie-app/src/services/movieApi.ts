@@ -1,6 +1,22 @@
-import { API_BASE, DEFAULT_IMAGE_BASE_URL, LATEST_MOVIES_ENDPOINT } from '@/constants/movie'
+import { API_BASE, LATEST_MOVIES_ENDPOINT } from '@/constants/movie'
 import { movieProviderManager } from './providers'
 import type { Movie, MovieFilters, MovieListResult } from '@/types/movie'
+
+export const HOME_MOVIE_SECTION_ENDPOINTS = {
+  latest: LATEST_MOVIES_ENDPOINT,
+  korean: `${API_BASE}/quoc-gia/han-quoc`,
+  series: 'https://phimapi.com/danh-sach/phim-bo',
+  single: 'https://phimapi.com/danh-sach/phim-le',
+  animation: `${API_BASE}/the-loai/hoat-hinh`,
+} as const
+
+export type HomeMovieSectionKey = keyof typeof HOME_MOVIE_SECTION_ENDPOINTS
+
+export function buildHomeMovieEndpoint(section: HomeMovieSectionKey, page = 1) {
+  const endpoint = new URL(HOME_MOVIE_SECTION_ENDPOINTS[section])
+  endpoint.searchParams.set('page', String(page))
+  return endpoint.toString()
+}
 
 export function buildMoviesEndpoint(filters: MovieFilters, keyword = '', page = 1) {
   const { type, country, genre, year } = filters
@@ -30,6 +46,26 @@ export function buildMoviesEndpoint(filters: MovieFilters, keyword = '', page = 
 
 export async function getMovieList(endpoint = LATEST_MOVIES_ENDPOINT): Promise<MovieListResult> {
   return movieProviderManager.getMovieListWithFallback(endpoint)
+}
+
+export function getLatestMovies() {
+  return getMovieList(buildHomeMovieEndpoint('latest'))
+}
+
+export function getHotKoreanMovies() {
+  return getMovieList(buildHomeMovieEndpoint('korean'))
+}
+
+export function getFeaturedSeries() {
+  return getMovieList(buildHomeMovieEndpoint('series'))
+}
+
+export function getFeaturedSingleMovies() {
+  return getMovieList(buildHomeMovieEndpoint('single'))
+}
+
+export function getFeaturedAnimationMovies() {
+  return getMovieList(buildHomeMovieEndpoint('animation'))
 }
 
 export async function getMovieDetail(slug: string): Promise<Movie> {

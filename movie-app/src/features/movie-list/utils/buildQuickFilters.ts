@@ -12,7 +12,6 @@ export interface QuickFilter {
   key: QuickFilterKey
   label: string
   slug: string
-  gradient: string
 }
 
 const optionsByKey: Record<QuickFilterKey, readonly MovieOption[]> = {
@@ -21,14 +20,14 @@ const optionsByKey: Record<QuickFilterKey, readonly MovieOption[]> = {
   genre: GENRES,
 }
 
-const quickFilterDefinitions: ReadonlyArray<Pick<QuickFilter, 'key' | 'slug' | 'gradient'>> = [
-  { key: 'type', slug: 'phim-chieu-rap', gradient: 'from-blue-500 to-blue-900' },
-  { key: 'type', slug: 'tv-shows', gradient: 'from-emerald-400 to-teal-900' },
-  { key: 'country', slug: 'han-quoc', gradient: 'from-slate-400 to-violet-900' },
-  { key: 'country', slug: 'trung-quoc', gradient: 'from-violet-500 to-fuchsia-900' },
-  { key: 'genre', slug: 'tinh-cam', gradient: 'from-orange-400 to-rose-800' },
-  { key: 'genre', slug: 'hanh-dong', gradient: 'from-red-500 to-red-950' },
-  { key: 'genre', slug: 'hoat-hinh', gradient: 'from-zinc-500 to-slate-950' },
+const quickFilterDefinitions: ReadonlyArray<Pick<QuickFilter, 'key' | 'slug'>> = [
+  { key: 'type', slug: 'phim-chieu-rap' },
+  { key: 'type', slug: 'tv-shows' },
+  { key: 'country', slug: 'han-quoc' },
+  { key: 'country', slug: 'trung-quoc' },
+  { key: 'genre', slug: 'tinh-cam' },
+  { key: 'genre', slug: 'hanh-dong' },
+  { key: 'genre', slug: 'hoat-hinh' },
 ]
 
 export function buildQuickFilters(): QuickFilter[] {
