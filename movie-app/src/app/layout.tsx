@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { FloatingParticles } from '@/components/layout/FloatingParticles'
+import { SiteFooter } from '@/components/layout/SiteFooter'
 import { AuthOverlays } from '@/features/auth/components/AuthOverlays'
 import { AuthProvider } from '@/features/auth/auth-context'
 import { UserDataProvider } from '@/features/user-data/user-data-context'
@@ -43,10 +43,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="vi">
       <body>
-        <FloatingParticles />
         <AuthProvider>
           <UserDataProvider>
-            <div className="relative z-10">{children}</div>
+            <div className="relative z-10">{children}<SiteFooter /></div>
             <AuthOverlays />
           </UserDataProvider>
         </AuthProvider>

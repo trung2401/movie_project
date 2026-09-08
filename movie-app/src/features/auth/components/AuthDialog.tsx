@@ -1,7 +1,7 @@
 'use client'
 
 import { AlertCircle, Eye, EyeOff, LogIn, UserPlus, X } from 'lucide-react'
-import { FormEvent, useState } from 'react'
+import { FormEvent, useEffect, useRef, useState } from 'react'
 import { useAuth, type AuthMode } from '../auth-context'
 
 export function AuthDialog() {
@@ -18,6 +18,27 @@ export function AuthDialog() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const dialogRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    if (!authDialogOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const focusable = dialogRef.current?.querySelector<HTMLElement>('button, input, select, textarea, a[href]')
+    focusable?.focus()
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); closeAuthDialog(); return }
+      if (event.key !== 'Tab' || !dialogRef.current) return
+      const elements = Array.from(dialogRef.current.querySelectorAll<HTMLElement>('button, input, select, textarea, a[href]')).filter((element) => !element.hasAttribute('disabled'))
+      if (!elements.length) return
+      const first = elements[0]
+      const last = elements[elements.length - 1]
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => { document.body.style.overflow = previousOverflow; document.removeEventListener('keydown', handleKeyDown) }
+  }, [authDialogOpen, closeAuthDialog])
 
   if (!authDialogOpen) return null
 
@@ -59,7 +80,8 @@ export function AuthDialog() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="auth-dialog-title"
-        className="relative w-full max-w-md border border-[var(--color-line)] bg-[var(--color-panel)] p-5 shadow-2xl shadow-black/40 sm:rounded-xl sm:p-6"
+        ref={dialogRef}
+        className="relative w-full max-w-md animate-[modal-in_180ms_ease-out] rounded-t-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-5 shadow-2xl shadow-black/40 sm:rounded-xl sm:p-6"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
