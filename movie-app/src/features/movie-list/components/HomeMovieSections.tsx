@@ -62,7 +62,7 @@ function HomeSectionStatus({ section, status }: { section: (typeof HOME_SECTIONS
 export function HomeMovieSectionsSkeleton() {
   return (
     <div className="min-h-screen">
-      <SiteHeader showFilters={false} overlay />
+      <SiteHeader overlay />
       <HeroBanner movies={[]} imageBaseUrl="" loading />
       <main aria-label="Đang tải trang chủ">
         {HOME_SECTIONS.map((section) => <MovieRailSkeleton key={section.key} title={section.title} />)}
@@ -76,7 +76,7 @@ export function HomeMovieSections({ sections }: { sections: HomeMovieSectionsRes
 
   return (
     <div className="min-h-screen">
-      <SiteHeader showFilters={false} overlay />
+      <SiteHeader overlay />
       <HeroBanner movies={latest.items} imageBaseUrl={latest.baseUrl} loading={false} />
       <main className="space-y-1 pb-8" aria-label="Các mục phim trên trang chủ">
         {HOME_SECTIONS.map((section) => <HomeSectionStatus key={section.key} section={section} status={sections[section.key]} />)}

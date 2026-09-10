@@ -16,17 +16,17 @@ export function EpisodeList({ episodes, currentEpisode, onEpisodeSelect }: { epi
         </div>
         <span className="rounded-full bg-[var(--color-panel-soft)] px-2.5 py-1 text-xs text-[var(--color-muted)]">{episodes.length} tập</span>
       </div>
-      <div className="grid max-h-80 grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8">
-        {episodes.map((episode) => {
+      <div className="grid max-h-80 min-w-0 grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
+        {episodes.map((episode, index) => {
           const isSelected = currentEpisode?.slug === episode.slug
 
           return (
             <button
-              key={episode.slug}
+              key={`${episode.slug}-${index}`}
               type="button"
               onClick={() => onEpisodeSelect(episode)}
               className={cn(
-                'focus-ring inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border px-2 text-sm font-bold transition-all duration-200',
+                'focus-ring inline-flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-lg border px-2 text-sm font-bold transition-all duration-200',
                 isSelected
                   ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white shadow-md shadow-[var(--color-primary)]/20'
                   : 'border-[var(--color-line)] bg-[var(--color-panel-soft)] text-[var(--color-muted)] hover:border-[var(--color-primary)] hover:bg-[var(--color-panel)] hover:text-white',

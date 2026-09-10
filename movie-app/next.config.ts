@@ -16,6 +16,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: '*.phimimg.com' },     // phòng trường hợp có subdomain (cdn., img....)
       { protocol: 'https', hostname: 'img.ophim.live' },
       { protocol: 'https', hostname: 'i.ex-cdn.com' },
+      { protocol: 'https', hostname: 'image.tmdb.org', pathname: '/t/p/**' },
     ],
   },
 }

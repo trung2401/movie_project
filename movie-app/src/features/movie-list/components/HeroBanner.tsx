@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { SyntheticEvent } from 'react'
 import { CONTAINER_CLASS } from '@/constants/layout'
 import { getMovieDescription } from '@/lib/movieText'
@@ -19,8 +19,10 @@ type OptionalMovieMetadata = Movie & {
   quality?: string
 }
 
+const FALLBACK_POSTER = '/fallback-poster.svg'
+
 function resolveImageUrl(path: string | undefined, baseUrl: string) {
-  if (!path) return '/fallback-poster.svg'
+  if (!path) return FALLBACK_POSTER
   if (/^https?:\/\//i.test(path)) return path
   return `${baseUrl.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`
 }
@@ -58,8 +60,19 @@ interface HeroSlideImageProps {
 }
 
 function HeroSlideImage({ movie, imageBaseUrl, priority }: HeroSlideImageProps) {
-  const imageSrc = resolveImageUrl(movie.thumb_url ?? movie.poster_url, imageBaseUrl)
+  const initialSrc = resolveImageUrl(movie.thumb_url ?? movie.poster_url, imageBaseUrl)
+  const [imageSrc, setImageSrc] = useState(initialSrc)
   const [isPortrait, setIsPortrait] = useState(() => !movie.thumb_url && Boolean(movie.poster_url))
+
+  useEffect(() => {
+    // Reset the per-slide fallback whenever the API source changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- required to reset a failed image when the slide source changes
+    setImageSrc(initialSrc)
+  }, [initialSrc])
+
+  function handleImageError() {
+    setImageSrc((currentSrc) => currentSrc === FALLBACK_POSTER ? currentSrc : FALLBACK_POSTER)
+  }
 
   function handleImageLoad(event: SyntheticEvent<HTMLImageElement>) {
     const image = event.currentTarget
@@ -76,6 +89,7 @@ function HeroSlideImage({ movie, imageBaseUrl, priority }: HeroSlideImageProps) 
           sizes="100vw"
           aria-hidden="true"
           className="hero-image-feather scale-110 object-cover opacity-35 blur-2xl"
+          onError={handleImageError}
           unoptimized={imageSrc.startsWith('data:')}
         />
       )}
@@ -86,6 +100,7 @@ function HeroSlideImage({ movie, imageBaseUrl, priority }: HeroSlideImageProps) 
         priority={priority}
         sizes="100vw"
         onLoad={handleImageLoad}
+        onError={handleImageError}
         className={cn(
           'hero-image-feather transition-[object-position] duration-500',
           isPortrait
