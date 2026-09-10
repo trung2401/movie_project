@@ -28,6 +28,7 @@ coverage/
 
 # Local files
 *.local
+next-env.d.ts
 
 # Editor directories and files
 .vscode/*

@@ -200,13 +200,13 @@ export function MovieWatchClient({
           </div>
         </section>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(18rem,.9fr)] lg:items-start">
+        <div className="mt-6 space-y-6">
           {selectedServer ? (
             <>
-              <div className="rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-4 sm:p-5">
+              <div className="min-w-0 rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-4 sm:p-5">
                 <ServerSelector servers={servers} selectedServer={selectedServer} onServerSelect={selectServer} />
               </div>
-              <div className="rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-4 sm:p-5">
+              <div className="min-w-0 rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-4 sm:p-5">
                 <EpisodeList episodes={selectedServer.server_data} currentEpisode={currentEpisode} onEpisodeSelect={selectEpisode} />
               </div>
             </>
@@ -215,8 +215,8 @@ export function MovieWatchClient({
               Không thể tải nguồn phát
             </div>
           )}
+          <RatingsPanel movieSlug={movie.slug} />
         </div>
-        <RatingsPanel movieSlug={movie.slug} />
       </main>
     </div>
   )
