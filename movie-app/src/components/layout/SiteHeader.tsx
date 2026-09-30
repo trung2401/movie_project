@@ -38,14 +38,28 @@ export function SiteHeader({
   const [filterDraft, setFilterDraft] = useState<MovieFilters>(filters)
   const [filterOpen, setFilterOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const years = useMemo(() => Array.from({ length: 30 }, (_, index) => String(new Date().getFullYear() - index)), [])
+  const [isHydrated, setIsHydrated] = useState(false)
+  const [currentYear, setCurrentYear] = useState<number | null>(null)
+  const years = useMemo(
+    () => currentYear === null
+      ? []
+      : Array.from({ length: 30 }, (_, index) => String(currentYear - index)),
+    [currentYear],
+  )
   const searchValue = searchDraft.source === keyword ? searchDraft.value : keyword
 
   useEffect(() => {
+    const hydrationId = window.setTimeout(() => {
+      setIsHydrated(true)
+      setCurrentYear(new Date().getFullYear())
+    }, 0)
     const handleScroll = () => setScrolled(window.scrollY > 12)
     handleScroll()
     window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
+    return () => {
+      window.clearTimeout(hydrationId)
+      window.removeEventListener('scroll', handleScroll)
+    }
   }, [])
 
   useEffect(() => {
@@ -144,7 +158,7 @@ export function SiteHeader({
               </button>
             )}
             <AccountControl compact />
-            {!session && <button type="button" onClick={() => openAuthDialog('register')} className="focus-ring hidden min-h-11 rounded-lg border border-white/20 px-3 text-xs font-bold text-white transition hover:border-white hover:bg-white hover:text-[var(--color-ink)] sm:inline-flex sm:items-center">Đăng ký</button>}
+            {isHydrated && !session && <button type="button" onClick={() => openAuthDialog('register')} className="focus-ring hidden min-h-11 rounded-lg border border-white/20 px-3 text-xs font-bold text-white transition hover:border-white hover:bg-white hover:text-[var(--color-ink)] sm:inline-flex sm:items-center">Đăng ký</button>}
           </div>
         </div>
 

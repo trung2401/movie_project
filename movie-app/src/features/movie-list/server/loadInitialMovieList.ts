@@ -1,7 +1,7 @@
 import { mockMovies } from '@/api/mockData'
 import { isMockEnvironment } from '@/constants/environment'
 import { DEFAULT_IMAGE_BASE_URL } from '@/constants/movie'
-import { buildMoviesEndpoint } from '@/services/movieApi'
+import { buildMoviesEndpoint } from '@/services/serverMovieEndpoints'
 import { getCachedMovieList } from '@/services/serverMovieApi'
 import type { MovieFilters, MovieListResult } from '@/types/movie'
 

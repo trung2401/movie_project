@@ -4,8 +4,11 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3000",
     "build": "next build",
+    "build:webpack": "next build --webpack",
+    "analyze": "next experimental-analyze --output",
+    "check:bundle": "node scripts/check-bundle-budget.mjs",
     "lint": "eslint .",
     "start": "next start"
   },

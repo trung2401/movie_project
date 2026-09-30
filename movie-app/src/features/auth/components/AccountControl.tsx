@@ -1,13 +1,20 @@
 'use client'
 
 import { LogIn, UserRound } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/cn'
 import { getDisplayName, useAuth } from '../auth-context'
 
 export function AccountControl({ compact = false }: { compact?: boolean }) {
   const { isReady, openAccountDrawer, openAuthDialog, session } = useAuth()
+  const [isHydrated, setIsHydrated] = useState(false)
 
-  if (!isReady) {
+  useEffect(() => {
+    const hydrationId = window.setTimeout(() => setIsHydrated(true), 0)
+    return () => window.clearTimeout(hydrationId)
+  }, [])
+
+  if (!isHydrated || !isReady) {
     return <div className={cn('animate-pulse rounded-lg bg-[var(--color-panel-soft)]', compact ? 'size-8' : 'size-10')} />
   }
 

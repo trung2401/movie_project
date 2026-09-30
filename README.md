@@ -62,7 +62,7 @@ Tạo database `movie_app` trước khi chạy migration. Có thể thực hiệ
 CREATE DATABASE movie_app;
 ```
 
-Giá trị `NEXT_PUBLIC_USER_API_BASE` của frontend phải trỏ đến cùng port backend, mặc định là `http://localhost:4000`.
+Giá trị `NEXT_PUBLIC_USER_API_BASE` của frontend phải trỏ đến cùng port backend: `http://localhost:4000`. Không để frontend tự suy đoán URL backend; hãy khai báo biến này trong `movie-app/.env.local`.
 
 Chạy migration:
 
@@ -89,6 +89,8 @@ Hoặc chạy riêng trong hai terminal:
 npm run dev --prefix movie-app
 npm run start:dev --prefix movie-app-be
 ```
+
+Các script trên dùng frontend tại `http://localhost:3000` và backend tại `http://localhost:4000`. Khi chạy production, frontend phải được build với `NEXT_PUBLIC_USER_API_BASE` và `NEXT_PUBLIC_SITE_URL`; backend phải có `FRONTEND_ORIGIN`.
 
 ## Lệnh thường dùng
 

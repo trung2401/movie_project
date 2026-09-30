@@ -6,6 +6,7 @@ import { parsePhimApiListResponse } from './phimapi.parser'
 import { getRequestedPage } from './pagination'
 
 const REQUEST_TIMEOUT_MS = 5_000
+const LIST_REVALIDATE_SECONDS = 300
 
 interface PhimApiDetailPayload {
   data?: { item?: Movie }
@@ -15,8 +16,17 @@ export const phimapiProvider: MovieProvider = {
   name: 'phimapi',
 
   async getMovieList(endpoint) {
-    const response = await axios.get<unknown>(endpoint, { timeout: REQUEST_TIMEOUT_MS })
-    return parsePhimApiListResponse(response.data, getRequestedPage(endpoint))
+    const response = await fetch(endpoint, {
+      next: { revalidate: LIST_REVALIDATE_SECONDS },
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      headers: { Accept: 'application/json' },
+    })
+    if (!response.ok) {
+      const error = new Error(`Movie list request failed with status ${response.status}.`)
+      Object.assign(error, { status: response.status })
+      throw error
+    }
+    return parsePhimApiListResponse(await response.json(), getRequestedPage(endpoint))
   },
 
   async getMovieDetail(slug) {

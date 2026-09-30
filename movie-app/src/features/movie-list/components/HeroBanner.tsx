@@ -80,36 +80,24 @@ function HeroSlideImage({ movie, imageBaseUrl, priority }: HeroSlideImageProps) 
   }
 
   return (
-    <>
-      {isPortrait && (
-        <Image
-          src={imageSrc}
-          alt=""
-          fill
-          sizes="100vw"
-          aria-hidden="true"
-          className="hero-image-feather scale-110 object-cover opacity-35 blur-2xl"
-          onError={handleImageError}
-          unoptimized={imageSrc.startsWith('data:')}
-        />
+    <Image
+      src={imageSrc}
+      alt={movie.name}
+      fill
+      priority={priority}
+      loading={priority ? undefined : 'lazy'}
+      quality={75}
+      sizes="100vw"
+      onLoad={handleImageLoad}
+      onError={handleImageError}
+      className={cn(
+        'hero-image-feather transition-[object-position] duration-500',
+        isPortrait
+          ? 'object-contain object-top md:object-center'
+          : 'object-cover object-top md:object-center',
       )}
-      <Image
-        src={imageSrc}
-        alt={movie.name}
-        fill
-        priority={priority}
-        sizes="100vw"
-        onLoad={handleImageLoad}
-        onError={handleImageError}
-        className={cn(
-          'hero-image-feather transition-[object-position] duration-500',
-          isPortrait
-            ? 'object-contain object-top md:object-center'
-            : 'object-cover object-top md:object-center',
-        )}
-        unoptimized={imageSrc.startsWith('data:')}
-      />
-    </>
+      unoptimized={imageSrc.startsWith('data:')}
+    />
   )
 }
 
@@ -174,6 +162,11 @@ export function HeroBanner({ movies, imageBaseUrl, loading }: { movies: Movie[];
 
         {heroMovies.map((movie, index) => {
           const isActive = index === currentIndex
+          const isNext = index === (currentIndex + 1) % heroMovies.length
+
+          // Keep only the visible slide and its preload target mounted. This
+          // avoids decoding all hero images while preserving instant advance.
+          if (!isActive && !isNext) return null
 
           return (
             <div
@@ -184,7 +177,7 @@ export function HeroBanner({ movies, imageBaseUrl, loading }: { movies: Movie[];
               )}
               aria-hidden={!isActive}
             >
-              <HeroSlideImage movie={movie} imageBaseUrl={imageBaseUrl} priority={index === 0} />
+              <HeroSlideImage movie={movie} imageBaseUrl={imageBaseUrl} priority={isActive && index === 0} />
             </div>
           )
         })}

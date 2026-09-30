@@ -1,17 +1,10 @@
-import axios from 'axios'
+import { readPublicEnvironmentVariable } from '@/constants/environment'
 
-const userApiBaseUrl = (
-  process.env.NEXT_PUBLIC_USER_API_BASE || 'http://localhost:4000'
+const userApiBaseUrl = readPublicEnvironmentVariable(
+  'NEXT_PUBLIC_USER_API_BASE',
+  process.env.NEXT_PUBLIC_USER_API_BASE,
 ).replace(/\/+$/, '')
 const USER_API_TIMEOUT_MS = 5_000
-
-const userApiClient = axios.create({
-  baseURL: userApiBaseUrl,
-  timeout: USER_API_TIMEOUT_MS,
-  headers: {
-    Accept: 'application/json',
-  },
-})
 
 export interface AuthUser {
   id: string
@@ -102,26 +95,54 @@ function readErrorMessage(data: unknown): string {
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  if (!userApiBaseUrl) {
+    throw new UserApiError(
+      'NEXT_PUBLIC_USER_API_BASE chưa được cấu hình cho dịch vụ tài khoản.',
+      0,
+    )
+  }
+
+  const controller = new AbortController()
+  const timeoutId = globalThis.setTimeout(() => controller.abort(), USER_API_TIMEOUT_MS)
+
   try {
-    const response = await userApiClient.request<T>({
-      url: path,
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+    }
+    if (options.accessToken) headers.Authorization = `Bearer ${options.accessToken}`
+    if (options.body !== undefined) headers['Content-Type'] = 'application/json'
+
+    const response = await fetch(`${userApiBaseUrl}${path}`, {
       method: options.method ?? 'GET',
-      data: options.body,
-      headers: options.accessToken
-        ? { Authorization: `Bearer ${options.accessToken}` }
-        : undefined,
+      headers,
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      cache: 'no-store',
+      signal: controller.signal,
     })
 
     if (response.status === 204) return undefined as T
-    return response.data
-  } catch (error: unknown) {
-    if (!axios.isAxiosError(error)) throw error
 
-    const responseData: unknown = error.response?.data
-    const message = responseData
-      ? readErrorMessage(responseData)
-      : 'Không thể kết nối đến dịch vụ tài khoản.'
-    throw new UserApiError(message, error.response?.status ?? 0)
+    const responseText = await response.text()
+    let responseData: unknown
+    try {
+      responseData = responseText ? JSON.parse(responseText) : undefined
+    } catch {
+      responseData = undefined
+    }
+
+    if (!response.ok) {
+      throw new UserApiError(
+        responseData ? readErrorMessage(responseData) : 'Không thể kết nối đến dịch vụ tài khoản.',
+        response.status,
+      )
+    }
+
+    return responseData as T
+  } catch (error: unknown) {
+    if (error instanceof UserApiError) throw error
+    throw new UserApiError('Không thể kết nối đến dịch vụ tài khoản.', 0)
+  } finally {
+    globalThis.clearTimeout(timeoutId)
   }
 }
 

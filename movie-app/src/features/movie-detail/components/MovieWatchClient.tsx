@@ -168,11 +168,8 @@ export function MovieWatchClient({
           <VideoPlayer embedLink={currentEpisode?.link_embed} title={`${movie.name} - Tập ${currentEpisode?.name || ''}`} />
         </div>
 
-        <section className="relative mt-6 overflow-hidden rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-4 sm:p-6">
-          <div className="pointer-events-none absolute inset-0 opacity-20" aria-hidden="true">
-            <Image src={getMovieImageUrl(movie)} alt="" fill sizes="100vw" className="object-cover blur-2xl" />
-          </div>
-          <div className="relative flex flex-col gap-6 sm:flex-row">
+        <section className="mt-6 overflow-hidden rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-4 sm:p-6">
+          <div className="flex flex-col gap-6 sm:flex-row">
             <div className="relative aspect-[2/3] w-36 shrink-0 overflow-hidden rounded-lg border border-[var(--color-line)] bg-[var(--color-panel-soft)] shadow-lg shadow-black/20">
               <Image
                 src={getMovieImageUrl(movie)}

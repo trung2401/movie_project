@@ -10,7 +10,7 @@ npm run migration:run
 npm run start:dev
 ```
 
-The local defaults in `.env` use the supplied MySQL connection:
+The local defaults in `.env` use the supplied MySQL connection and run the API on port `4000`:
 
 ```dotenv
 DB_HOST=127.0.0.1
@@ -18,9 +18,10 @@ DB_PORT=3306
 DB_USER=dev
 DB_PASS=devpass
 DB_NAME=movie_app
+PORT=4000
 ```
 
-Create the `movie_app` database and ensure the configured MySQL user can create tables before running migrations. Replace both JWT secrets before deployment. The server runs at `http://localhost:3001` by default and allows `http://localhost:3000` as its frontend origin.
+Create the `movie_app` database and ensure the configured MySQL user can create tables before running migrations. Replace both JWT secrets before deployment. The server runs at `http://localhost:4000` and allows `http://localhost:3000` as its frontend origin. `PORT` and `FRONTEND_ORIGIN` are required environment variables; the server does not silently fall back when they are missing.
 
 ## API
 
