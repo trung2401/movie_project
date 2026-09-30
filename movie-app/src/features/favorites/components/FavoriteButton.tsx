@@ -21,6 +21,12 @@ export function FavoriteButton({
   const [isFavorite, setIsFavorite] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [isHydrated, setIsHydrated] = useState(false)
+
+  useEffect(() => {
+    const hydrationId = window.setTimeout(() => setIsHydrated(true), 0)
+    return () => window.clearTimeout(hydrationId)
+  }, [])
 
   useEffect(() => {
     if (!session) return
@@ -70,10 +76,14 @@ export function FavoriteButton({
     }
   }
 
-  const activeFavorite = session ? isFavorite : false
-  const label = !isReady
+  // Auth state can be restored before a streamed client component hydrates.
+  // Keep the first client render identical to the server render.
+  const authReady = isHydrated && isReady
+  const renderSession = authReady ? session : null
+  const activeFavorite = renderSession ? isFavorite : false
+  const label = !authReady
     ? 'Đang tải'
-    : !session
+    : !renderSession
       ? 'Đăng nhập để thêm yêu thích'
       : activeFavorite
         ? 'Bỏ yêu thích'
@@ -84,7 +94,7 @@ export function FavoriteButton({
       <button
         type="button"
         onClick={() => void toggleFavorite()}
-        disabled={!isReady || loading}
+        disabled={!authReady || loading}
         className={`focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-bold transition disabled:cursor-wait disabled:opacity-60 ${
           activeFavorite
             ? 'border-rose-300/60 bg-rose-400/15 text-rose-200'

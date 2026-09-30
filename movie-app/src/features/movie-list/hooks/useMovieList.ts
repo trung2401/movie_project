@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DEFAULT_IMAGE_BASE_URL, EMPTY_FILTERS } from '@/constants/movie'
 import { isMockEnvironment } from '@/constants/environment'
 import { mockMovies } from '@/api/mockData'
-import { buildMoviesEndpoint, getMovieList } from '@/services/movieApi'
+import { getMovieList } from '@/services/movieApi'
 import type { Movie, MovieFilters, MovieListPagination, MovieListResult } from '@/types/movie'
 
 function parsePage(value: string | null, fallback = 1) {
@@ -49,20 +49,25 @@ export function useMovieList(
   const currentPage = queryPage
   const selectedFilters = filterDraft.key === queryKey ? filterDraft.filters : queryFilters
 
-  const fetchMovies = useCallback(async (endpoint: string) => {
+  const activeController = useRef<AbortController | null>(null)
+
+  const fetchMovies = useCallback(async (filters: MovieFilters, keyword: string, page: number) => {
     const requestId = ++latestRequestId.current
+    activeController.current?.abort()
+    const controller = new AbortController()
+    activeController.current = controller
 
     try {
       setLoading(true)
       setError(null)
-      const result = await getMovieList(endpoint)
+      const result = await getMovieList(filters, keyword, page, controller.signal)
       if (requestId !== latestRequestId.current) return
 
       setMovies(result.items)
       setImageBaseUrl(result.baseUrl)
       setPagination(result.pagination)
     } catch (err) {
-      if (requestId !== latestRequestId.current) return
+      if (controller.signal.aborted || requestId !== latestRequestId.current) return
 
       console.error('API Error:', err)
       setError(isMockEnvironment ? 'Không thể tải dữ liệu API. Đang dùng dữ liệu mẫu.' : 'Không thể tải dữ liệu API.')
@@ -71,6 +76,7 @@ export function useMovieList(
       setPagination({ hasNextPage: false })
     } finally {
       if (requestId === latestRequestId.current) setLoading(false)
+      if (activeController.current === controller) activeController.current = null
     }
   }, [])
 
@@ -83,12 +89,15 @@ export function useMovieList(
       return () => window.clearTimeout(timeoutId)
     }
 
-    latestRequestId.current += 1
     const timeoutId = window.setTimeout(() => {
-      void fetchMovies(buildMoviesEndpoint(queryFilters, queryKeyword, queryPage))
+      void fetchMovies(queryFilters, queryKeyword, queryPage)
     }, 0)
 
-    return () => window.clearTimeout(timeoutId)
+    return () => {
+      window.clearTimeout(timeoutId)
+      activeController.current?.abort()
+      latestRequestId.current += 1
+    }
   }, [fetchMovies, queryFilters, queryKey, queryKeyword, queryPage])
 
   const setSelectedFilters = useCallback((filters: MovieFilters) => {
@@ -112,8 +121,8 @@ export function useMovieList(
   }, [pathname, router])
 
   const applyFilters = useCallback((nextFilters: MovieFilters = selectedFilters) => {
-    updateUrl('', nextFilters, 1)
-  }, [selectedFilters, updateUrl])
+    updateUrl(searchKeyword, nextFilters, 1)
+  }, [searchKeyword, selectedFilters, updateUrl])
 
   const search = useCallback((keyword: string) => {
     updateUrl(keyword, EMPTY_FILTERS, 1)
@@ -129,7 +138,7 @@ export function useMovieList(
   }, [appliedFilters, currentPage, searchKeyword, updateUrl])
 
   const retry = useCallback(() => {
-    void fetchMovies(buildMoviesEndpoint(appliedFilters, searchKeyword, currentPage))
+    void fetchMovies(appliedFilters, searchKeyword, currentPage)
   }, [appliedFilters, currentPage, fetchMovies, searchKeyword])
 
   return {

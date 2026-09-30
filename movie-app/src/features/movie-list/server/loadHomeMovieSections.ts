@@ -1,5 +1,5 @@
 import { DEFAULT_IMAGE_BASE_URL } from '@/constants/movie'
-import { buildHomeMovieEndpoint, HOME_MOVIE_SECTION_ENDPOINTS, type HomeMovieSectionKey } from '@/services/movieApi'
+import { buildHomeMovieEndpoint, type HomeMovieSectionKey } from '@/services/serverMovieEndpoints'
 import { getCachedMovieList } from '@/services/serverMovieApi'
 import type { Movie, MovieListResult } from '@/types/movie'
 
@@ -7,8 +7,6 @@ export interface HomeMovieSectionResult {
   result: MovieListResult
   error: string | null
 }
-
-export type HomeMovieSectionsResult = Record<HomeMovieSectionKey, HomeMovieSectionResult>
 
 function createEmptyResult(): MovieListResult {
   return {
@@ -27,7 +25,7 @@ function dedupeMovies(movies: Movie[]) {
   })
 }
 
-async function loadSection(section: HomeMovieSectionKey): Promise<HomeMovieSectionResult> {
+export async function loadHomeMovieSection(section: HomeMovieSectionKey): Promise<HomeMovieSectionResult> {
   try {
     const result = await getCachedMovieList(buildHomeMovieEndpoint(section))
     return {
@@ -41,14 +39,4 @@ async function loadSection(section: HomeMovieSectionKey): Promise<HomeMovieSecti
       error: 'Không thể tải nội dung của mục này.',
     }
   }
-}
-
-export async function loadHomeMovieSections(): Promise<HomeMovieSectionsResult> {
-  const sections = Object.keys(HOME_MOVIE_SECTION_ENDPOINTS) as HomeMovieSectionKey[]
-  const results = await Promise.all(sections.map((section) => loadSection(section)))
-
-  return sections.reduce((loadedSections, section, index) => {
-    loadedSections[section] = results[index]
-    return loadedSections
-  }, {} as HomeMovieSectionsResult)
 }

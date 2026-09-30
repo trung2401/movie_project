@@ -16,7 +16,7 @@
 - React 19
 - TypeScript
 - Tailwind CSS
-- Axios
+- Fetch API (tài khoản) và Axios (provider server)
 - ESLint
 
 ## Yêu cầu hệ thống
@@ -59,6 +59,14 @@ Trong thư mục dự án, chạy:
 ```bash
 npm install
 ```
+
+Tạo `.env.local` từ file mẫu ở thư mục `movie-app` và giữ URL API tài khoản trỏ đến backend port `4000`:
+
+```bash
+cp .env.example .env.local
+```
+
+Các biến `NEXT_PUBLIC_USER_API_BASE` và `NEXT_PUBLIC_SITE_URL` là bắt buộc khi build production. Frontend không tự fallback sang một backend localhost nếu thiếu `NEXT_PUBLIC_USER_API_BASE`.
 
 Nếu đang dùng Node.js 20+ và npm ổn định, lệnh trên sẽ tự cài đặt toàn bộ package cần thiết cho dự án.
 
@@ -108,7 +116,24 @@ npm run lint
 
 Lệnh này giúp phát hiện các lỗi code và cảnh báo trên dự án.
 
-## 6. Cấu trúc thư mục chính
+## 6. Đo bundle và kiểm tra budget
+
+Next.js 16 cung cấp analyzer tích hợp cho Turbopack. Tạo báo cáo module/import chain bằng:
+
+```bash
+npm run analyze
+```
+
+Báo cáo được ghi vào `.next/diagnostics/analyze` (thư mục build này không được commit). Để đo kích thước JavaScript theo route bằng webpack và kiểm tra raw/gzip/Brotli budget:
+
+```bash
+npm run build:webpack
+npm run check:bundle
+```
+
+Checker theo dõi homepage (`/`), catalog (`/phim`), detail (`/xem-phim/[slug]`) và phần shared chunks. Khi vượt ngưỡng, lệnh kết thúc với mã lỗi để CI có thể chặn regression.
+
+## 7. Cấu trúc thư mục chính
 
 ```text
 movie-app/
@@ -130,23 +155,25 @@ movie-app/
 └── ...
 ```
 
-## 7. Lưu ý quan trọng
+## 8. Lưu ý quan trọng
 
 - Dự án sử dụng dữ liệu phim từ các nguồn API bên ngoài, do đó cần có kết nối Internet khi chạy.
 - Nếu bạn chạy ở môi trường LAN hoặc máy chủ khác, có thể cần chỉnh lại `allowedDevOrigins` trong file `next.config.ts`.
 - Nếu port 3000 đang bị chiếm, hãy đổi cổng hoặc dừng tiến trình đang sử dụng trước đó.
 
-## 8. Các lệnh thường dùng nhanh
+## 9. Các lệnh thường dùng nhanh
 
 ```bash
 npm install
 npm run dev
 npm run build
+npm run build:webpack
+npm run check:bundle
 npm run start
 npm run lint
 ```
 
-## 9. Khắc phục sự cố cơ bản
+## 10. Khắc phục sự cố cơ bản
 
 ### Lỗi: `command not found: npm`
 
@@ -174,7 +201,7 @@ Sửa cấu hình trong `next.config.ts` hoặc chạy với hostname rõ ràng:
 npx next dev -H 0.0.0.0 -p 3000
 ```
 
-## 10. Giới thiệu ngắn
+## 11. Giới thiệu ngắn
 
 Dự án này phù hợp nếu bạn muốn xây dựng một website xem phim đơn giản nhưng có cấu trúc rõ ràng, dễ mở rộng theo từng module như danh sách phim, chi tiết phim, tìm kiếm và phát video.
 

@@ -21,13 +21,11 @@ function requireValue(config: Record<string, unknown>, key: string): string {
   return value
 }
 
-function readPort(
-  config: Record<string, unknown>,
-  key: string,
-  fallback?: number,
-): number {
+function readPort(config: Record<string, unknown>, key: string): number {
   const rawValue = config[key]
-  if (rawValue === undefined && fallback !== undefined) return fallback
+  if (rawValue === undefined || rawValue === null || rawValue === '') {
+    throw new Error(`Environment variable ${key} is required`)
+  }
   const value = Number(rawValue)
   if (!Number.isInteger(value) || value < 1 || value > 65535) {
     throw new Error(`Environment variable ${key} must be a valid port`)
@@ -46,7 +44,7 @@ export function validateEnvironment(
 
   return {
     NODE_ENV: nodeEnv,
-    PORT: readPort(config, 'PORT', 3001),
+    PORT: readPort(config, 'PORT'),
     FRONTEND_ORIGIN: requireValue(config, 'FRONTEND_ORIGIN'),
     DB_HOST: requireValue(config, 'DB_HOST'),
     DB_PORT: readPort(config, 'DB_PORT'),

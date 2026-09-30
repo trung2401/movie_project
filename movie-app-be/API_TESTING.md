@@ -6,6 +6,8 @@ Base URL for the local server:
 http://localhost:4000
 ```
 
+This is the same port configured by `PORT=4000` in `.env.example`. If `PORT` is changed for a local test, update this base URL accordingly; the backend has no implicit port fallback.
+
 The API does not use an `/api` prefix. For protected routes, send this HTTP header after logging in:
 
 ```http

@@ -1,8 +1,9 @@
 import { mockMovies } from '@/api/mockData'
 import { isMockEnvironment } from '@/constants/environment'
 import { MovieWatchClient } from '@/features/movie-detail/components/MovieWatchClient'
+import { UserDataBoundary } from '@/features/user-data/UserDataBoundary'
 import { getMetadataDescription, getMovieImageUrl, getMoviePath, getMovieStructuredData, getMovieUrl, hasMovieFacts, isPlaceholderMovieDescription } from '@/lib/seo'
-import { getMovieDetail } from '@/services/movieApi'
+import { getServerMovieDetail } from '@/services/serverMovieApi'
 import { MovieNotFoundError } from '@/services/providers'
 import type { Movie } from '@/types/movie'
 import type { Metadata } from 'next'
@@ -16,7 +17,7 @@ type WatchPageProps = {
 
 const loadMovie = cache(async (slug: string): Promise<Movie> => {
   try {
-    return await getMovieDetail(slug)
+    return await getServerMovieDetail(slug)
   } catch (error) {
     if (error instanceof MovieNotFoundError) notFound()
     if (!isMockEnvironment) throw error
@@ -80,10 +81,12 @@ export default async function WatchPage({ params, searchParams }: WatchPageProps
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: structuredData }} />
-      <MovieWatchClient
-        movie={movie}
-        initialEpisodeSlug={typeof episode === 'string' ? episode : undefined}
-      />
+      <UserDataBoundary>
+        <MovieWatchClient
+          movie={movie}
+          initialEpisodeSlug={typeof episode === 'string' ? episode : undefined}
+        />
+      </UserDataBoundary>
     </>
   )
 }

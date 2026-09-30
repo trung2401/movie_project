@@ -1,4 +1,5 @@
 import type { Movie, MovieListResult } from '@/types/movie'
+import { nguoncProvider } from './nguonc.provider'
 import { phimapiProvider } from './phimapi.provider'
 import type { MovieProvider } from './types'
 
@@ -103,7 +104,7 @@ async function getMovieDetailWithFallback(slug: string): Promise<Movie> {
 }
 
 export const movieProviderManager = {
-  providers: [phimapiProvider] as const,
+  providers: [phimapiProvider, nguoncProvider] as const,
   getMovieListWithFallback,
   getMovieDetailWithFallback,
 }

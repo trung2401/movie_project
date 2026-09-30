@@ -1,13 +1,13 @@
-'use client'
-
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { AlertCircle, ArrowRight, Film } from 'lucide-react'
 import { SiteHeader } from '@/components/layout/SiteHeader'
 import { CONTAINER_CLASS } from '@/constants/layout'
-import type { HomeMovieSectionKey } from '@/services/movieApi'
-import type { HomeMovieSectionResult, HomeMovieSectionsResult } from '../server/loadHomeMovieSections'
+import type { HomeMovieSectionKey } from '@/services/serverMovieEndpoints'
+import { loadHomeMovieSection, type HomeMovieSectionResult } from '../server/loadHomeMovieSections'
 import { HeroBanner } from './HeroBanner'
 import { MovieRail, MovieRailSkeleton } from './MovieRail'
+import { UserDataBoundary } from '@/features/user-data/UserDataBoundary'
 
 const HOME_SECTIONS: Array<{ key: HomeMovieSectionKey; title: string; href: string; description?: string }> = [
   { key: 'latest', title: 'Phim mới cập nhật', href: '/phim', description: 'Những tựa phim vừa được bổ sung trên hệ thống.' },
@@ -59,27 +59,32 @@ function HomeSectionStatus({ section, status }: { section: (typeof HOME_SECTIONS
   return <MovieRail title={section.title} description={section.description} movies={status.result.items} imageBaseUrl={status.result.baseUrl} href={section.href} />
 }
 
-export function HomeMovieSectionsSkeleton() {
-  return (
-    <div className="min-h-screen">
-      <SiteHeader overlay />
-      <HeroBanner movies={[]} imageBaseUrl="" loading />
-      <main aria-label="Đang tải trang chủ">
-        {HOME_SECTIONS.map((section) => <MovieRailSkeleton key={section.key} title={section.title} />)}
-      </main>
-    </div>
-  )
+async function HomeHeroLoader() {
+  const status = await loadHomeMovieSection('latest')
+  return <HeroBanner movies={status.result.items} imageBaseUrl={status.result.baseUrl} loading={false} />
 }
 
-export function HomeMovieSections({ sections }: { sections: HomeMovieSectionsResult }) {
-  const latest = sections.latest.result
+async function HomeMovieSectionLoader({ section }: { section: (typeof HOME_SECTIONS)[number] }) {
+  const status = await loadHomeMovieSection(section.key)
+  return <HomeSectionStatus section={section} status={status} />
+}
 
+export function HomeMovieSections() {
   return (
     <div className="min-h-screen">
       <SiteHeader overlay />
-      <HeroBanner movies={latest.items} imageBaseUrl={latest.baseUrl} loading={false} />
+      <h1 className="sr-only">Xem phim online miễn phí trên Motchill</h1>
+      <UserDataBoundary>
+        <Suspense fallback={<HeroBanner movies={[]} imageBaseUrl="" loading />}>
+          <HomeHeroLoader />
+        </Suspense>
+      </UserDataBoundary>
       <main className="space-y-1 pb-8" aria-label="Các mục phim trên trang chủ">
-        {HOME_SECTIONS.map((section) => <HomeSectionStatus key={section.key} section={section} status={sections[section.key]} />)}
+        {HOME_SECTIONS.map((section) => (
+          <Suspense key={section.key} fallback={<MovieRailSkeleton title={section.title} />}>
+            <HomeMovieSectionLoader section={section} />
+          </Suspense>
+        ))}
       </main>
     </div>
   )

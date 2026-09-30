@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { AuthOverlays } from '@/features/auth/components/AuthOverlays'
 import { AuthProvider } from '@/features/auth/auth-context'
-import { UserDataProvider } from '@/features/user-data/user-data-context'
 import { SITE_URL } from '@/constants/environment'
 import { DEFAULT_SOCIAL_IMAGE } from '@/lib/seo'
 import './globals.css'
@@ -44,10 +43,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="vi">
       <body>
         <AuthProvider>
-          <UserDataProvider>
-            <div className="relative z-10">{children}<SiteFooter /></div>
-            <AuthOverlays />
-          </UserDataProvider>
+          <div className="relative z-10">{children}<SiteFooter /></div>
+          <AuthOverlays />
         </AuthProvider>
       </body>
     </html>

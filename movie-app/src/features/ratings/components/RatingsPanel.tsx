@@ -30,6 +30,12 @@ export function RatingsPanel({ movieSlug }: { movieSlug: string }) {
   const [score, setScore] = useState('8')
   const [comment, setComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [isHydrated, setIsHydrated] = useState(false)
+
+  useEffect(() => {
+    const hydrationId = window.setTimeout(() => setIsHydrated(true), 0)
+    return () => window.clearTimeout(hydrationId)
+  }, [])
 
   const loadRatings = useCallback(async () => {
     setLoading(true)
@@ -56,6 +62,9 @@ export function RatingsPanel({ movieSlug }: { movieSlug: string }) {
     const requestId = window.setTimeout(() => void loadRatings(), 0)
     return () => window.clearTimeout(requestId)
   }, [loadRatings])
+
+  const authReady = isHydrated && isReady
+  const renderSession = authReady ? session : null
 
   async function submitRating(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -118,7 +127,7 @@ export function RatingsPanel({ movieSlug }: { movieSlug: string }) {
               id="rating-score"
               value={score}
               onChange={(event) => setScore(event.target.value)}
-              disabled={!isReady || submitting}
+              disabled={!authReady || submitting}
               aria-label="Chọn điểm từ 1 đến 10"
               className="focus-ring mt-2 h-11 w-36 max-w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-ink)] px-3 text-sm text-white outline-none transition hover:border-[var(--color-primary)] focus:border-[var(--color-primary)]"
             >
@@ -130,7 +139,7 @@ export function RatingsPanel({ movieSlug }: { movieSlug: string }) {
             <input
               value={comment}
               onChange={(event) => setComment(event.target.value)}
-              disabled={!isReady || submitting}
+              disabled={!authReady || submitting}
               maxLength={1000}
               className="focus-ring mt-2 h-11 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-ink)] px-3 text-sm text-white outline-none placeholder:text-[var(--color-muted)] focus:border-[var(--color-primary)]"
               placeholder="Chia sẻ cảm nhận"
@@ -138,11 +147,11 @@ export function RatingsPanel({ movieSlug }: { movieSlug: string }) {
           </label>
           <button
             type="submit"
-            disabled={!isReady || submitting}
+            disabled={!authReady || submitting}
             className="focus-ring inline-flex h-11 w-fit max-w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-primary)] px-4 text-sm font-bold text-white transition hover:bg-[var(--color-primary-soft)] disabled:cursor-wait disabled:opacity-60 sm:col-span-2 lg:col-span-1"
           >
             {submitting && <LoaderCircle className="size-4 animate-spin" />}
-            {session ? 'Gửi đánh giá' : 'Đăng nhập để đánh giá'}
+            {!authReady ? 'Đang tải' : renderSession ? 'Gửi đánh giá' : 'Đăng nhập để đánh giá'}
           </button>
         </form>
 
