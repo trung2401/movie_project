@@ -1,4 +1,3 @@
-import axios from 'axios'
 import { API_BASE } from '@/constants/movie'
 import type { Movie } from '@/types/movie'
 import type { MovieProvider } from './types'
@@ -30,12 +29,18 @@ export const phimapiProvider: MovieProvider = {
   },
 
   async getMovieDetail(slug) {
-    try {
-      const response = await axios.get<unknown>(`${API_BASE}/phim/${slug}`, { timeout: REQUEST_TIMEOUT_MS })
-      return (response.data as PhimApiDetailPayload).data?.item ?? null
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 404) return null
+    const response = await fetch(`${API_BASE}/phim/${encodeURIComponent(slug)}`, {
+      next: { revalidate: LIST_REVALIDATE_SECONDS },
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      headers: { Accept: 'application/json' },
+    })
+    if (response.status === 404) return null
+    if (!response.ok) {
+      const error = new Error(`Movie detail request failed with status ${response.status}.`)
+      Object.assign(error, { status: response.status })
       throw error
     }
+
+    return ((await response.json()) as PhimApiDetailPayload).data?.item ?? null
   },
 }
