@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Play } from 'lucide-react'
 import { useState } from 'react'
 import type { Movie } from '@/types/movie'
-import { getMovieAggregateRating, getMovieCountries, getMovieGenres, getMovieLanguage } from '@/lib/seo'
+import { getMovieAggregateRating, getMovieCountries, getMovieEpisodeCount, getMovieGenres, getMovieLanguage } from '@/lib/seo'
 
 const FALLBACK_IMAGE = '/fallback-poster.svg'
 
@@ -50,7 +50,7 @@ export function MovieCard({ movie, imageBaseUrl }: { movie: Movie; imageBaseUrl:
   const genres = getMovieGenres(movie)
   const countries = getMovieCountries(movie)
   const language = getMovieLanguage(movie) ?? movie.lang ?? movie.language
-  const episodeCount = movie.episodes?.reduce((count, server) => count + server.server_data.length, 0) ?? 0
+  const episodeCount = getMovieEpisodeCount(movie)
   const metadata = movie as Movie & { quality?: string; sub_docquyen?: string; chieurap?: boolean }
   const quality = metadata.quality || (metadata.chieurap ? 'Rạp' : undefined)
 

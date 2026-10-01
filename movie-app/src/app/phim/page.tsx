@@ -5,6 +5,8 @@ import { loadInitialMovieList } from '@/features/movie-list/server/loadInitialMo
 import { parseMovieListQuery, type MovieListSearchParams } from '@/features/movie-list/utils/parseMovieListQuery'
 import { getMovieListMetadata } from '@/lib/seo'
 
+export const revalidate = 300
+
 export async function generateMetadata({
   searchParams,
 }: {

@@ -2,10 +2,48 @@ import type { Metadata } from 'next'
 import { SITE_URL } from '@/constants/environment'
 import { COUNTRIES, DEFAULT_IMAGE_BASE_URL, GENRES, MOVIE_TYPES } from '@/constants/movie'
 import { getMovieDescription } from '@/lib/movieText'
-import type { Movie, MovieFilters } from '@/types/movie'
+import type { Episode, Movie, MovieFilters } from '@/types/movie'
 
 export const DEFAULT_SOCIAL_IMAGE = '/og-motchill.png'
 const DEFAULT_MOVIE_IMAGE = '/fallback-poster.svg'
+
+function normalizeEpisodeKey(episode: Episode) {
+  const slug = episode.slug.trim().toLocaleLowerCase('vi-VN')
+  if (slug) return `slug:${slug}`
+
+  return `name:${episode.name.trim().toLocaleLowerCase('vi-VN')}`
+}
+
+export function getMovieEpisodes(movie: Movie) {
+  const seen = new Set<string>()
+
+  return movie.episodes?.flatMap((server) => server.server_data).filter((episode) => {
+    const key = normalizeEpisodeKey(episode)
+    if (seen.has(key)) return false
+
+    seen.add(key)
+    return true
+  }) ?? []
+}
+
+export function getMovieEpisodeCount(movie: Movie) {
+  return getMovieEpisodes(movie).length
+}
+
+function getPlayableEpisode(movie: Movie, episodeSlug?: string) {
+  const episodes = getMovieEpisodes(movie)
+  const requestedEpisode = episodeSlug?.trim()
+
+  return episodes.find((episode) => (
+    (!requestedEpisode || episode.slug === requestedEpisode)
+    && Boolean(episode.link_embed)
+  )) ?? episodes.find((episode) => Boolean(episode.link_embed))
+}
+
+function formatEpisodeLabel(name: string) {
+  const trimmedName = name.trim()
+  return /^tập\b/i.test(trimmedName) ? trimmedName : `Tập ${trimmedName}`
+}
 
 function getFirstQueryValue(value: string | string[] | undefined) {
   return typeof value === 'string' ? value : ''
@@ -153,8 +191,18 @@ export function getMovieAggregateRating(movie: Movie) {
 
 export function getMovieSchemaType(movie: Movie, episodeCount: number) {
   const type = movie.type?.toLowerCase()
-  if (type?.includes('series') || type?.includes('tv') || type?.includes('show')) return 'TVSeries'
-  if (type?.includes('movie') || type?.includes('single') || type?.includes('film')) return 'Movie'
+  if (
+    type?.includes('series')
+    || type?.includes('tv')
+    || type?.includes('show')
+    || type?.includes('phim bộ')
+  ) return 'TVSeries'
+  if (
+    type?.includes('movie')
+    || type?.includes('single')
+    || type?.includes('film')
+    || type?.includes('phim lẻ')
+  ) return 'Movie'
   return episodeCount > 1 ? 'TVSeries' : 'Movie'
 }
 
@@ -177,9 +225,10 @@ export function getMovieStructuredData(movie: Movie, movieUrl: string, episodeCo
   const rating = getMovieAggregateRating(movie)
   const datePublished = getMoviePublishedAt(movie)
   const dateModified = getMovieUpdatedAt(movie)
+  const schemaType = getMovieSchemaType(movie, episodeCount)
   const movieSchema = {
     '@context': 'https://schema.org',
-    '@type': getMovieSchemaType(movie, episodeCount),
+    '@type': schemaType,
     name: movie.name,
     alternateName: movie.origin_name,
     description: getMovieDescription(movie.content),
@@ -192,7 +241,7 @@ export function getMovieStructuredData(movie: Movie, movieUrl: string, episodeCo
     ...(directors.length ? { director: directors.map((name) => ({ '@type': 'Person', name })) } : {}),
     ...(datePublished ? { datePublished } : {}),
     ...(dateModified ? { dateModified } : {}),
-    ...(episodeCount > 1 ? { numberOfEpisodes: episodeCount } : {}),
+    ...(schemaType === 'TVSeries' && episodeCount > 0 ? { numberOfEpisodes: episodeCount } : {}),
     ...(rating ? {
       aggregateRating: {
         '@type': 'AggregateRating',
@@ -213,6 +262,43 @@ export function getMovieStructuredData(movie: Movie, movieUrl: string, episodeCo
   }
 
   return movieSchema
+}
+
+export function getMovieVideoStructuredData(movie: Movie, movieUrl: string, episodeSlug?: string) {
+  const episode = getPlayableEpisode(movie, episodeSlug)
+  if (!episode?.link_embed) return undefined
+
+  const datePublished = getMoviePublishedAt(movie)
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'VideoObject',
+    name: `${movie.name} - ${formatEpisodeLabel(episode.name)}`,
+    description: getMetadataDescription(movie.content),
+    thumbnailUrl: [getMovieImageUrl(movie)],
+    embedUrl: episode.link_embed,
+    url: movieUrl,
+    ...(datePublished ? { uploadDate: datePublished } : {}),
+    publisher: {
+      '@type': 'Organization',
+      name: 'Motchill',
+    },
+  }
+}
+
+export function getWebsiteStructuredData() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'Motchill',
+    url: toUrl('/'),
+    inLanguage: 'vi-VN',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: `${SITE_URL}/phim?keyword={search_term_string}`,
+      'query-input': 'required name=search_term_string',
+    },
+  }
 }
 
 function getFilterLabel(key: keyof MovieFilters, value: string) {

@@ -2,7 +2,7 @@ import { mockMovies } from '@/api/mockData'
 import { isMockEnvironment } from '@/constants/environment'
 import { MovieWatchClient } from '@/features/movie-detail/components/MovieWatchClient'
 import { UserDataBoundary } from '@/features/user-data/UserDataBoundary'
-import { getMetadataDescription, getMovieImageUrl, getMoviePath, getMovieStructuredData, getMovieUrl, hasMovieFacts, isPlaceholderMovieDescription } from '@/lib/seo'
+import { getMetadataDescription, getMovieEpisodeCount, getMovieImageUrl, getMoviePath, getMovieStructuredData, getMovieUrl, getMovieVideoStructuredData, hasMovieFacts, isPlaceholderMovieDescription } from '@/lib/seo'
 import { getServerMovieDetail } from '@/services/serverMovieApi'
 import { MovieNotFoundError } from '@/services/providers'
 import type { Movie } from '@/types/movie'
@@ -14,6 +14,8 @@ type WatchPageProps = {
   params: Promise<{ slug: string }>
   searchParams: Promise<{ episode?: string | string[] }>
 }
+
+export const revalidate = 300
 
 const loadMovie = cache(async (slug: string): Promise<Movie> => {
   try {
@@ -65,8 +67,13 @@ export default async function WatchPage({ params, searchParams }: WatchPageProps
   const movie = await loadMovie(slug)
   if (isPlaceholderMovieDescription(movie.content) && !hasMovieFacts(movie)) notFound()
   const movieUrl = getMovieUrl(movie.slug)
-  const episodeCount = movie.episodes?.reduce((count, server) => count + server.server_data.length, 0) ?? 0
+  const episodeCount = getMovieEpisodeCount(movie)
   const movieSchema = getMovieStructuredData(movie, movieUrl, episodeCount)
+  const videoSchema = getMovieVideoStructuredData(
+    movie,
+    movieUrl,
+    typeof episode === 'string' ? episode : undefined,
+  )
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -76,7 +83,11 @@ export default async function WatchPage({ params, searchParams }: WatchPageProps
       { '@type': 'ListItem', position: 3, name: movie.name, item: movieUrl },
     ],
   }
-  const structuredData = JSON.stringify([movieSchema, breadcrumbSchema]).replace(/</g, '\\u003c')
+  const structuredData = JSON.stringify([
+    movieSchema,
+    ...(videoSchema ? [videoSchema] : []),
+    breadcrumbSchema,
+  ]).replace(/</g, '\\u003c')
 
   return (
     <>

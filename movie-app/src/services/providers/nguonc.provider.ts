@@ -1,4 +1,3 @@
-import axios from 'axios'
 import { getRequestedPage } from './pagination'
 import type { MovieProvider } from './types'
 import type { MovieListResult } from '@/types/movie'
@@ -83,14 +82,18 @@ export const nguoncProvider: MovieProvider = {
   },
 
   async getMovieDetail(slug) {
-    try {
-      const response = await axios.get<unknown>(`${NGUONC_API_BASE}/film/${encodeURIComponent(slug)}`, {
-        timeout: REQUEST_TIMEOUT_MS,
-      })
-      return parseNguonCDetailResponse(response.data)
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 404) return null
+    const response = await fetch(`${NGUONC_API_BASE}/film/${encodeURIComponent(slug)}`, {
+      next: { revalidate: LIST_REVALIDATE_SECONDS },
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      headers: { Accept: 'application/json' },
+    })
+    if (response.status === 404) return null
+    if (!response.ok) {
+      const error = new Error(`NguonC movie detail request failed with status ${response.status}.`)
+      Object.assign(error, { status: response.status })
       throw error
     }
+
+    return parseNguonCDetailResponse(await response.json())
   },
 }

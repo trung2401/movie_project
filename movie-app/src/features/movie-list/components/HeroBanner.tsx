@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react'
 import type { SyntheticEvent } from 'react'
 import { CONTAINER_CLASS } from '@/constants/layout'
 import { getMovieDescription } from '@/lib/movieText'
-import { getMovieAggregateRating, getMovieLanguage } from '@/lib/seo'
+import { getMovieAggregateRating, getMovieEpisodeCount, getMovieLanguage } from '@/lib/seo'
 import type { Movie } from '@/types/movie'
 import { cn } from '@/lib/cn'
 import { FavoriteButton } from '@/features/favorites/components/FavoriteButton'
@@ -136,7 +136,7 @@ export function HeroBanner({ movies, imageBaseUrl, loading }: { movies: Movie[];
   const activeTitle = activeMovie ? splitMovieTitle(activeMovie.name) : { eyebrow: '', title: '' }
   const rating = activeMovie ? getMovieAggregateRating(activeMovie)?.ratingValue : undefined
   const language = activeMovie ? getMovieLanguage(activeMovie) ?? activeMovie.lang ?? activeMovie.language : undefined
-  const episodeCount = activeMovie?.episodes?.reduce((count, server) => count + server.server_data.length, 0) ?? 0
+  const episodeCount = activeMovie ? getMovieEpisodeCount(activeMovie) : 0
   const quality = (activeMovie as (Movie & { quality?: string }) | undefined)?.quality
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLElement>) {
